@@ -7,6 +7,10 @@
 		function Neuron(x, y, z) {
 
 			this.connection = [];
+			// represents the 1:1 ratio astrocyte associated w/ neuron
+			this.astrocyte = false;
+			// the neurons this neuron is connected to
+			this.neurons = [];
 			this.recievedSignal = false;
 			this.lastSignalRelease = 0;
 			this.releaseDelay = 0;
@@ -26,6 +30,8 @@
 			var axon = new Axon(neuronA, neuronB);
 			neuronA.connection.push( new Connection(axon, 'A') );
 			neuronB.connection.push( new Connection(axon, 'B') );
+			neuronA.neurons.push(neuronB);
+			neuronB.neurons.push(neuronA);
 			return axon;
 
 		};
@@ -45,6 +51,21 @@
 				}
 			}
 			return signals;
+
+		};
+
+		Neuron.prototype.canFire = function() {
+			var total = this.neurons.length;
+			var active = 0;
+			for(var i=0; i<total; i++) {
+			 	if(this.neurons[i].astrocyte) {
+			 		active++;
+			 	}
+			}
+			if(active>=total/2) {
+				return true;
+			}
+			return false;
 
 		};
 
@@ -362,6 +383,10 @@
 			for (var i=0; i<inputVertices.length; i+=this.verticesSkipStep) {
 				var pos = inputVertices[i];
 				var n = new Neuron(pos.x, pos.y, pos.z);
+				// half of all the astrocytes should be live
+				if(i%2==0) {
+					n.astrocyte=true;
+				}
 				this.allNeurons.push(n);
 				this.neuronsGeom.vertices.push(n);
 			}
@@ -443,7 +468,8 @@
 
 				if (this.allSignals.length < this.currentMaxSignals-this.maxConnectionPerNeuron) {		// currentMaxSignals - maxConnectionPerNeuron because allSignals can not bigger than particlePool size
 
-					if (n.recievedSignal && n.firedCount < 8)  {	// Traversal mode
+					if(n.recievedSignal && n.canFire() && n.firedCount < 8) { // Astrocyte mode
+					// if (n.recievedSignal && n.firedCount < 8)  {	// Traversal mode
 					// if (n.recievedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
 					// if (n.recievedSignal && !n.fired )  {	// Single propagation mode
 						n.fired = true;
