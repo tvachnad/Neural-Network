@@ -68,15 +68,13 @@
 			var activeAstrocyte = null;
 			// see if the astrocyte directly linked to this neuron has the energy needed to fire
 			if(this.astrocyte.availableEnergy>0){
-				activeAstrocyte = this.astrocyte;
-				return activeAstrocyte;
+				return this.astrocyte;
 			}
 			// if we get here, the directly linked astrocyte did not have enough energy
 			// check the astrocytes of surrounding neurons to see if they have enough energy
 			for(var i=0; i<total; i++) {
 			 	if(this.neurons[i].astrocyte.availableEnergy>0) {
-			 		activeAstrocyte = this.astrocyte;
-			 		return activeAstrocyte;
+			 		return this.neurons[i].astrocyte;
 			 	}
 			}
 			return null;
@@ -87,6 +85,7 @@
 		function Astrocyte() {
 			// replaces the if firedCount < 8
 			this.availableEnergy = astrocyte_settings.aEnergy;
+			// currently this value is not being used but it allows room for future expansion
 			this.lastUsed = 0;
 		}
 
@@ -491,9 +490,9 @@
 
 				n = this.allNeurons[ii];
 				if (this.allSignals.length < this.currentMaxSignals-this.maxConnectionPerNeuron) {// currentMaxSignals - maxConnectionPerNeuron because allSignals can not bigger than particlePool size
-                    // the astrocyte we're taking energy from, if available (otherwise this will be equal to null)
+                    // the astrocyte we're taking energy from
                     var a = n.canFire();
-					if(n.recievedSignal && a!==null) { // Astrocyte mode
+					if(n.recievedSignal && a!=null) { // Astrocyte mode
 					// if (n.recievedSignal && n.firedCount < 8)  {	// Traversal mode
 					// if (n.recievedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
 					// if (n.recievedSignal && !n.fired )  {	// Single propagation mode
