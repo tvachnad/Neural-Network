@@ -358,7 +358,8 @@
 			this.numNeurons = 0;
 			this.numAxons = 0;
 			this.numSignals = 0;
-			this.numActiveAstrocytes = 0;
+			// probably shouldn't be hardcoded
+			this.numActiveAstrocytes = 7241;
 
 			// initialize NN
 			this.initNeuralNetwork();
@@ -665,9 +666,11 @@
 
 		var gui_info = gui.addFolder('Info');
 		gui_info.add(neuralNet, 'numNeurons').name('Neurons');
+		gui_info.add(neuralNet, 'numNeurons').name('Astrocytes');
 		gui_info.add(neuralNet, 'numActiveAstrocytes').name('Active astrocytes');
 		gui_info.add(neuralNet, 'numAxons').name('Axons');
 		gui_info.add(neuralNet, 'numSignals', 0, neuralNet.limitSignals).name('Signals');
+		gui_info.add(neuralNet, 'numActiveAstrocytes', 0, neuralNet.numActiveAstrocytes).name('Active Astrocytes');
 		gui_info.autoListen = false;
 
 		var gui_settings = gui.addFolder('Settings');
