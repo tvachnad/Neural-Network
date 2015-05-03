@@ -8,7 +8,7 @@
 
 			this.connection = [];
 			// represents the 1:1 ratio astrocyte associated w/ neuron
-			this.astrocyte = false;
+			this.astrocyte = null;
 			// the neurons this neuron is connected to
 			this.neurons = [];
 			this.recievedSignal = false;
@@ -58,7 +58,7 @@
 			var total = this.neurons.length;
 			var active = 0;
 			for(var i=0; i<total; i++) {
-			 	if(this.neurons[i].astrocyte) {
+			 	if(this.neurons[i].astrocyte.active) {
 			 		active++;
 			 	}
 			}
@@ -68,6 +68,17 @@
 			return false;
 
 		};
+
+	// Astrocyte -------------------------------------------------------------
+		function Astrocyte() {
+			// represents whether or not this astrocyte can provide energy to a neuron
+			this.active = false;
+			// may need to try other values.
+			this.availableEnergy = 5;
+			this.lastUsed = 0;
+		}
+
+		// Astrocyte.prototype = Object.create(THREE.Vector3.prototype);
 
 	// Signal ----------------------------------------------------------------
 
@@ -383,9 +394,10 @@
 			for (var i=0; i<inputVertices.length; i+=this.verticesSkipStep) {
 				var pos = inputVertices[i];
 				var n = new Neuron(pos.x, pos.y, pos.z);
+				n.astrocyte = new Astrocyte();
 				// half of all the astrocytes should be live
 				if(i%2==0) {
-					n.astrocyte=true;
+					n.astrocyte.active=true;
 				}
 				this.allNeurons.push(n);
 				this.neuronsGeom.vertices.push(n);
@@ -468,7 +480,7 @@
 
 				if (this.allSignals.length < this.currentMaxSignals-this.maxConnectionPerNeuron) {		// currentMaxSignals - maxConnectionPerNeuron because allSignals can not bigger than particlePool size
 
-					if(n.recievedSignal && n.canFire() && n.firedCount < 8) { // Astrocyte mode
+					if(n.recievedSignal && n.canFire()) { // Astrocyte mode
 					// if (n.recievedSignal && n.firedCount < 8)  {	// Traversal mode
 					// if (n.recievedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
 					// if (n.recievedSignal && !n.fired )  {	// Single propagation mode
@@ -476,6 +488,11 @@
 						n.lastSignalRelease = currentTime;
 						n.releaseDelay = THREE.Math.randInt(100, 1000);
 						this.releaseSignalAt(n);
+
+						//TODO: check here for 2 things	
+						//	- astrocyte recovery time, set TRUE
+						//  - astrocyte active too much, set FALSE
+						
 					}
 
 				}
