@@ -514,7 +514,6 @@
 
 			// reset all neurons and when there is X signal
 			if (this.allSignals.length <= 0) {
-
 				for (ii=0; ii<this.allNeurons.length; ii++) {	// reset all neuron state
 					n = this.allNeurons[ii];
 					n.releaseDelay = 0;
@@ -523,6 +522,7 @@
 					n.firedCount = 0;
 					n.astrocyte.availableEnergy = astrocyte_settings.aEnergy;
 				}
+				console.log("New signal released");
 				this.releaseSignalAt(this.allNeurons[THREE.Math.randInt(0, this.allNeurons.length)]);
 
 			}
