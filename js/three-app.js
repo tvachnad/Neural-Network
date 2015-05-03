@@ -66,10 +66,13 @@
 			var total = this.neurons.length;
 			//console.log(" i"+this.neurons.length);
 			var activeAstrocyte = null;
+			// see if the astrocyte directly linked to this neuron has the energy needed to fire
 			if(this.astrocyte.availableEnergy>0){
 				activeAstrocyte = this.astrocyte;
 				return activeAstrocyte;
 			}
+			// if we get here, the directly linked astrocyte did not have enough energy
+			// check the astrocytes of surrounding neurons to see if they have enough energy
 			for(var i=0; i<total; i++) {
 			 	if(this.neurons[i].astrocyte.availableEnergy>0) {
 			 		activeAstrocyte = this.astrocyte;
@@ -87,7 +90,12 @@
 			this.lastUsed = 0;
 		}
 
-		// Astrocyte.prototype = Object.create(THREE.Vector3.prototype);
+		// stalling work on this because it may not be necessary if we're resetting after each signal dies
+		// Astrocyte.prototype.refreshEnergy(network) {
+		// 	for(var i=0; i<network.allNeurons.length; i++) {
+		// 		if(network.allNeurons[i].astrocyte.lastUsed<)
+		// 	}
+		// }
 
 	// Signal ----------------------------------------------------------------
 
@@ -489,24 +497,21 @@
 			for (ii=0; ii<this.allNeurons.length; ii++) {
 
 				n = this.allNeurons[ii];
-                     // console.log("not fire before");
 				if (this.allSignals.length < this.currentMaxSignals-this.maxConnectionPerNeuron) {// currentMaxSignals - maxConnectionPerNeuron because allSignals can not bigger than particlePool size
-                      //console.log("not fire after");
-					if(n.recievedSignal && n.canFire()!==null) { // Astrocyte mode
+                    // the astrocyte we're taking energy from, if available (otherwise this will be equal to null)
+                    var a = n.canFire();
+					if(n.recievedSignal && a!==null) { // Astrocyte mode
 					// if (n.recievedSignal && n.firedCount < 8)  {	// Traversal mode
 					// if (n.recievedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
 					// if (n.recievedSignal && !n.fired )  {	// Single propagation mode
 						//console.log("fire");
 						n.fired = true;
 						//decrease energy level of astrocyte
-						n.canFire().availableEnergy--;
+						a.availableEnergy--;
+						a.lastUsed = currentTime;
 						n.lastSignalRelease = currentTime;
 						n.releaseDelay = THREE.Math.randInt(100, 1000);
 						this.releaseSignalAt(n);
-
-						//TODO: check here for 2 things	
-						//	- astrocyte recovery time, set TRUE
-						//  - astrocyte active too much, set FALSE
 						
 					}
 
