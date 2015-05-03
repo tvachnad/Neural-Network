@@ -90,13 +90,6 @@
 			this.lastUsed = 0;
 		}
 
-		// stalling work on this because it may not be necessary if we're resetting after each signal dies
-		// Astrocyte.prototype.refreshEnergy(network) {
-		// 	for(var i=0; i<network.allNeurons.length; i++) {
-		// 		if(network.allNeurons[i].astrocyte.lastUsed<)
-		// 	}
-		// }
-
 	// Signal ----------------------------------------------------------------
 
 		function Signal(particlePool, minSpeed, maxSpeed) {
