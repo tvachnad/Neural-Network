@@ -71,10 +71,8 @@
 
 	// Astrocyte -------------------------------------------------------------
 		function Astrocyte() {
-			// represents whether or not this astrocyte can provide energy to a neuron
-			this.active = false;
-			// may need to try other values.
-			this.availableEnergy = 5;
+			// replaces the if firedCount < 8
+			this.availableEnergy = 8;
 			this.lastUsed = 0;
 		}
 
