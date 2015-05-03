@@ -3,8 +3,12 @@
 (function main() { "use strict";
 
 	// Astrocyte Constants  --------------------------------------------------
-	var AstrocyteEnergy = 1;
-
+	//var astrocyte_settings.aEnergy;
+	console.log("local");
+     if(!localStorage['energy']){
+     	console.log("false");
+     	localStorage.setItem('energy',10);
+     }
 	// Neuron ----------------------------------------------------------------
 
 		function Neuron(x, y, z) {
@@ -79,7 +83,7 @@
 	// Astrocyte -------------------------------------------------------------
 		function Astrocyte() {
 			// replaces the if firedCount < 8
-			this.availableEnergy = AstrocyteEnergy;
+			this.availableEnergy = astrocyte_settings.aEnergy;
 			this.lastUsed = 0;
 		}
 
@@ -519,7 +523,7 @@
 					n.fired = false;
 					n.recievedSignal = false;
 					n.firedCount = 0;
-					n.astrocyte.availableEnergy = AstrocyteEnergy;
+					n.astrocyte.availableEnergy = astrocyte_settings.aEnergy;
 				}
 				this.releaseSignalAt(this.allNeurons[THREE.Math.randInt(0, this.allNeurons.length)]);
 
@@ -602,6 +606,7 @@
 			this.neuronMaterial.opacity = this.neuronOpacity;
 			this.neuronMaterial.color.setHex(this.neuronColor);
 			this.neuronMaterial.size = this.neuronSize;
+			
 
 			this.shaderUniforms.color.value.set(this.axonColor);
 			this.shaderUniforms.opacityMultiplier.value = this.axonOpacityMultiplier;
@@ -645,6 +650,10 @@
 			bgColor: 0x0d0d0f
 		};
 
+		var astrocyte_settings = {
+			aEnergy: localStorage['energy']
+		};
+
 		// Neural Net
 		var neuralNet = window.neuralNet = new NeuralNetwork();
 
@@ -673,7 +682,17 @@
 		gui_settings.addColor(neuralNet, 'neuronColor').name('Neuron Color');
 		gui_settings.addColor(neuralNet, 'axonColor').name('Axon Color');
 		gui_settings.addColor(scene_settings, 'bgColor').name('Background');
-		//gui_settings.addEnergy()
+		var controller = gui.add(astrocyte_settings, 'aEnergy', 0, 10).name('Astrocyte energy');
+		controller.onChange(function(value){
+			console.log(value);
+			console.log(astrocyte_settings.aEnergy);
+			localStorage.setItem('energy', value);
+			
+		});
+		controller.onFinishChange(function(value) {
+			window.location.reload();
+		});
+		
 
 		gui_info.open();
 		gui_settings.open();
@@ -681,6 +700,8 @@
 		function updateNeuralNetworkSettings() {
 			neuralNet.updateSettings();
 		}
+
+		
 
 		for (var i in gui_settings.__controllers) {
 			gui_settings.__controllers[i].onChange(updateNeuralNetworkSettings);
@@ -696,6 +717,7 @@
 
 
 	(function run() {
+		
 
 		requestAnimationFrame(run);
 		renderer.setClearColor(scene_settings.bgColor, 1);
