@@ -2,6 +2,9 @@
 
 (function main() { "use strict";
 
+	// Astrocyte Constants  --------------------------------------------------
+	var AstrocyteEnergy = 1;
+
 	// Neuron ----------------------------------------------------------------
 
 		function Neuron(x, y, z) {
@@ -53,26 +56,30 @@
 			return signals;
 
 		};
-
+          //returns active astrocytes, it's taking energy from
 		Neuron.prototype.canFire = function() {
+
 			var total = this.neurons.length;
-			var active = 0;
+			//console.log(" i"+this.neurons.length);
+			var activeAstrocyte = null;
+			if(this.astrocyte.availableEnergy>0){
+				activeAstrocyte = this.astrocyte;
+				return activeAstrocyte;
+			}
 			for(var i=0; i<total; i++) {
-			 	if(this.neurons[i].astrocyte.active) {
-			 		active++;
+			 	if(this.neurons[i].astrocyte.availableEnergy>0) {
+			 		activeAstrocyte = this.astrocyte;
+			 		return activeAstrocyte;
 			 	}
 			}
-			if(active>=total/2) {
-				return true;
-			}
-			return false;
+			return null;
 
 		};
 
 	// Astrocyte -------------------------------------------------------------
 		function Astrocyte() {
 			// replaces the if firedCount < 8
-			this.availableEnergy = 8;
+			this.availableEnergy = AstrocyteEnergy;
 			this.lastUsed = 0;
 		}
 
@@ -347,6 +354,7 @@
 			this.numNeurons = 0;
 			this.numAxons = 0;
 			this.numSignals = 0;
+			this.numActiveAstrocytes = 0;
 
 			// initialize NN
 			this.initNeuralNetwork();
@@ -388,6 +396,7 @@
 		};
 
 		NeuralNetwork.prototype.initNeurons = function (inputVertices) {
+			console.log("init Neurons");
 
 			for (var i=0; i<inputVertices.length; i+=this.verticesSkipStep) {
 				var pos = inputVertices[i];
@@ -475,14 +484,17 @@
 			for (ii=0; ii<this.allNeurons.length; ii++) {
 
 				n = this.allNeurons[ii];
-
-				if (this.allSignals.length < this.currentMaxSignals-this.maxConnectionPerNeuron) {		// currentMaxSignals - maxConnectionPerNeuron because allSignals can not bigger than particlePool size
-
-					if(n.recievedSignal && n.canFire()) { // Astrocyte mode
+                     // console.log("not fire before");
+				if (this.allSignals.length < this.currentMaxSignals-this.maxConnectionPerNeuron) {// currentMaxSignals - maxConnectionPerNeuron because allSignals can not bigger than particlePool size
+                      //console.log("not fire after");
+					if(n.recievedSignal && n.canFire()!==null) { // Astrocyte mode
 					// if (n.recievedSignal && n.firedCount < 8)  {	// Traversal mode
 					// if (n.recievedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
 					// if (n.recievedSignal && !n.fired )  {	// Single propagation mode
+						//console.log("fire");
 						n.fired = true;
+						//decrease energy level of astrocyte
+						n.canFire().availableEnergy--;
 						n.lastSignalRelease = currentTime;
 						n.releaseDelay = THREE.Math.randInt(100, 1000);
 						this.releaseSignalAt(n);
@@ -507,6 +519,7 @@
 					n.fired = false;
 					n.recievedSignal = false;
 					n.firedCount = 0;
+					n.astrocyte.availableEnergy = AstrocyteEnergy;
 				}
 				this.releaseSignalAt(this.allNeurons[THREE.Math.randInt(0, this.allNeurons.length)]);
 
@@ -575,6 +588,13 @@
 			this.numNeurons = this.allNeurons.length;
 			this.numAxons = this.allAxons.length;
 			this.numSignals = this.allSignals.length;
+			var activeAstros =0;
+			for(i=0;i<this.numNeurons;i++){
+				if (this.allNeurons[i].astrocyte.availableEnergy>0)
+					activeAstros++;
+			}
+			this.numActiveAstrocytes = activeAstros;
+
 		};
 
 		NeuralNetwork.prototype.updateSettings = function () {
@@ -636,6 +656,7 @@
 
 		var gui_info = gui.addFolder('Info');
 		gui_info.add(neuralNet, 'numNeurons').name('Neurons');
+		gui_info.add(neuralNet, 'numActiveAstrocytes').name('Active astrocytes');
 		gui_info.add(neuralNet, 'numAxons').name('Axons');
 		gui_info.add(neuralNet, 'numSignals', 0, neuralNet.limitSignals).name('Signals');
 		gui_info.autoListen = false;
@@ -652,6 +673,7 @@
 		gui_settings.addColor(neuralNet, 'neuronColor').name('Neuron Color');
 		gui_settings.addColor(neuralNet, 'axonColor').name('Axon Color');
 		gui_settings.addColor(scene_settings, 'bgColor').name('Background');
+		//gui_settings.addEnergy()
 
 		gui_info.open();
 		gui_settings.open();
