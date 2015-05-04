@@ -664,7 +664,6 @@
 		var gui_info = gui.addFolder('Info');
 		gui_info.add(neuralNet, 'numNeurons').name('Neurons');
 		gui_info.add(neuralNet, 'numNeurons').name('Astrocytes');
-		gui_info.add(neuralNet, 'numActiveAstrocytes').name('Active astrocytes');
 		gui_info.add(neuralNet, 'numAxons').name('Axons');
 		gui_info.add(neuralNet, 'numSignals', 0, neuralNet.limitSignals).name('Signals');
 		gui_info.add(neuralNet, 'numActiveAstrocytes', 0, neuralNet.numActiveAstrocytes).name('Active Astrocytes');
