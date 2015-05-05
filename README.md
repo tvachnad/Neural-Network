@@ -1,8 +1,7 @@
-Neural Network
+Neural-Glial Network
 ==============
 
-<a href="http://nxxcxx.github.io/Neural-Network/" target="_blank">Demo</a>
+<a href="http://edlab-www.cs.umass.edu/~cjcorey/Neural-Network/index.html" target="_blank">Demo</a>
 <br/>
-Cinema4D + three.js
+<a href="http://edlab-www.cs.umass.edu/~cjcorey/Neural-Network/FinalProjectWrite-Up.pdf" target="_blank">Demo</a>
 <br/>
-![](https://raw.githubusercontent.com/nxxcxx/Neural-Network/gh-pages/screenshot.jpg)
