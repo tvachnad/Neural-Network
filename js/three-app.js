@@ -3,12 +3,18 @@
 (function main() { "use strict";
 
 	// Astrocyte Constants  --------------------------------------------------
-	//var astrocyte_settings.aEnergy;
-	console.log("local");
-     if(!localStorage['energy']){
-     	console.log("false");
-     	localStorage.setItem('energy',10);
-     }
+	
+	// // Default values for min and max astrocyte energy in case these values aren't set.
+	// console.log("local");
+ //     if(!localStorage['minEnergy']){
+ //     	console.log("no min energy stored");
+ //     	localStorage.setItem('minEnergy',4);
+ //     }
+ //     if(!localStorage['maxEnergy']){
+ //     	console.log("no max energy stored");
+ //     	localStorage.setItem('maxEnergy',8);
+ //     }
+
 	// Neuron ----------------------------------------------------------------
 
 		function Neuron(x, y, z) {
@@ -84,7 +90,7 @@
 	// Astrocyte -------------------------------------------------------------
 		function Astrocyte() {
 			// replaces the if firedCount < 8
-			this.availableEnergy = astrocyte_settings.aEnergy;
+			this.availableEnergy = astrocyte_settings.minEnergy;
 			// currently this value is not being used but it allows room for future expansion
 			this.lastUsed = 0;
 		}
@@ -411,6 +417,7 @@
 				if(i%2==0) {
 					n.astrocyte.active=true;
 				}
+				n.astrocyte.availableEnergy = astrocyte_settings.maxEnergy; // modify this, should be a rand int between max and min
 				this.allNeurons.push(n);
 				this.neuronsGeom.vertices.push(n);
 			}
@@ -520,7 +527,7 @@
 					n.fired = false;
 					n.recievedSignal = false;
 					n.firedCount = 0;
-					n.astrocyte.availableEnergy = astrocyte_settings.aEnergy;
+					n.astrocyte.availableEnergy = astrocyte_settings.minEnergy;	// change this it should be a hybrid min/max alg. - reset astrocyte state
 				}
 				console.log("New signal released");
 				this.releaseSignalAt(this.allNeurons[THREE.Math.randInt(0, this.allNeurons.length)]);
@@ -649,7 +656,8 @@
 		};
 
 		var astrocyte_settings = {
-			aEnergy: localStorage['energy']
+			minEnergy: 4, // default min
+			maxEnergy: 8 // default max
 		};
 
 		// Neural Net
@@ -669,7 +677,13 @@
 		gui_info.add(neuralNet, 'numActiveAstrocytes', 0, neuralNet.numActiveAstrocytes).name('Active Astrocytes');
 		gui_info.autoListen = false;
 
+		// var a_settings = gui.addFolder('Astrocyte Settings');
+		// a_settings.add(astrocyte_settings, 'minEnergy', 0, 10).name('Astrocyte min energy');
+		// a_settings.add(astrocyte_settings, 'maxEnergy', 0, 10).name('Astrocyte max energy');
+
 		var gui_settings = gui.addFolder('Settings');
+		gui_settings.add(astrocyte_settings, 'minEnergy', 0, 10).name('Astrocyte min energy');
+		gui_settings.add(astrocyte_settings, 'maxEnergy', 0, 10).name('Astrocyte max energy');
 		gui_settings.add(neuralNet, 'currentMaxSignals', 0, neuralNet.limitSignals).name('Max Signals');
 		gui_settings.add(neuralNet.particlePool, 'pSize', 0.2, 2).name('Signal Size');
 		gui_settings.add(neuralNet, 'signalMinSpeed', 0.01, 0.1, 0.01).name('Signal Min Speed');
@@ -681,26 +695,28 @@
 		gui_settings.addColor(neuralNet, 'neuronColor').name('Neuron Color');
 		gui_settings.addColor(neuralNet, 'axonColor').name('Axon Color');
 		gui_settings.addColor(scene_settings, 'bgColor').name('Background');
-		var controller = gui.add(astrocyte_settings, 'aEnergy', 0, 10).name('Astrocyte energy');
-		controller.onChange(function(value){
-			console.log(value);
-			console.log(astrocyte_settings.aEnergy);
-			localStorage.setItem('energy', value);
-			
-		});
-		controller.onFinishChange(function(value) {
-			window.location.reload();
-		});
-		
 
 		gui_info.open();
+		// a_settings.open();
 		gui_settings.open();
 
 		function updateNeuralNetworkSettings() {
 			neuralNet.updateSettings();
 		}
 
-		
+
+		// for(var i in a_settings.__controllers) {
+		// 	// when one of the values in astrocyte settings is changed, save it to local storage
+		// 	a_settings.__controllers[i].onChange(function() {
+		// 		localStorage.setItem('maxEnergy', astrocyte_settings.minEnergy);
+		// 		localStorage.setItem('minEnergy', astrocyte_settings.maxEnergy);
+		// 	});
+		// 	// // after any of the astrocyte settings is changed, the whole network has to be re-instantiated
+		// 	// // for it to take effect....?
+		// 	// a_settings.__controllers[i].onFinishChange(function() {
+		// 	// 	window.location.reload();
+		// 	// });
+		// }
 
 		for (var i in gui_settings.__controllers) {
 			gui_settings.__controllers[i].onChange(updateNeuralNetworkSettings);
