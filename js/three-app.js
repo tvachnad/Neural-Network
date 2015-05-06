@@ -95,6 +95,10 @@
 			this.lastUsed = 0;
 		}
 
+		Astrocyte.prototype.resetEnergy = function() {
+			this.availableEnergy = THREE.Math.randInt(astrocyte_settings.minEnergy, astrocyte_settings.maxEnergy);
+		};
+
 	// Signal ----------------------------------------------------------------
 
 		function Signal(particlePool, minSpeed, maxSpeed) {
@@ -417,7 +421,7 @@
 				if(i%2==0) {
 					n.astrocyte.active=true;
 				}
-				n.astrocyte.availableEnergy = astrocyte_settings.maxEnergy; // modify this, should be a rand int between max and min
+				n.astrocyte.resetEnergy(); // modify this, should be a rand int between max and min
 				this.allNeurons.push(n);
 				this.neuronsGeom.vertices.push(n);
 			}
@@ -527,7 +531,7 @@
 					n.fired = false;
 					n.recievedSignal = false;
 					n.firedCount = 0;
-					n.astrocyte.availableEnergy = astrocyte_settings.minEnergy;	// change this it should be a hybrid min/max alg. - reset astrocyte state
+					n.astrocyte.resetEnergy();	// reset astrocyte state
 				}
 				console.log("New signal released");
 				this.releaseSignalAt(this.allNeurons[THREE.Math.randInt(0, this.allNeurons.length)]);
