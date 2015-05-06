@@ -2,19 +2,6 @@
 
 (function main() { "use strict";
 
-	// Astrocyte Constants  --------------------------------------------------
-	
-	// // Default values for min and max astrocyte energy in case these values aren't set.
-	// console.log("local");
- //     if(!localStorage['minEnergy']){
- //     	console.log("no min energy stored");
- //     	localStorage.setItem('minEnergy',4);
- //     }
- //     if(!localStorage['maxEnergy']){
- //     	console.log("no max energy stored");
- //     	localStorage.setItem('maxEnergy',8);
- //     }
-
 	// Neuron ----------------------------------------------------------------
 
 		function Neuron(x, y, z) {
@@ -681,10 +668,6 @@
 		gui_info.add(neuralNet, 'numActiveAstrocytes', 0, neuralNet.numActiveAstrocytes).name('Active Astrocytes');
 		gui_info.autoListen = false;
 
-		// var a_settings = gui.addFolder('Astrocyte Settings');
-		// a_settings.add(astrocyte_settings, 'minEnergy', 0, 10).name('Astrocyte min energy');
-		// a_settings.add(astrocyte_settings, 'maxEnergy', 0, 10).name('Astrocyte max energy');
-
 		var gui_settings = gui.addFolder('Settings');
 		gui_settings.add(astrocyte_settings, 'minEnergy', 0, 10).name('Astrocyte min energy');
 		gui_settings.add(astrocyte_settings, 'maxEnergy', 0, 10).name('Astrocyte max energy');
@@ -707,20 +690,6 @@
 		function updateNeuralNetworkSettings() {
 			neuralNet.updateSettings();
 		}
-
-
-		// for(var i in a_settings.__controllers) {
-		// 	// when one of the values in astrocyte settings is changed, save it to local storage
-		// 	a_settings.__controllers[i].onChange(function() {
-		// 		localStorage.setItem('maxEnergy', astrocyte_settings.minEnergy);
-		// 		localStorage.setItem('minEnergy', astrocyte_settings.maxEnergy);
-		// 	});
-		// 	// // after any of the astrocyte settings is changed, the whole network has to be re-instantiated
-		// 	// // for it to take effect....?
-		// 	// a_settings.__controllers[i].onFinishChange(function() {
-		// 	// 	window.location.reload();
-		// 	// });
-		// }
 
 		for (var i in gui_settings.__controllers) {
 			gui_settings.__controllers[i].onChange(updateNeuralNetworkSettings);
