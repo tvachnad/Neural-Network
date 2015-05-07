@@ -11,7 +11,7 @@
 			this.astrocyte = null;
 			// the neurons this neuron is connected to
 			this.neurons = [];
-			this.recievedSignal = false;
+			this.receivedSignal = false;
 			this.lastSignalRelease = 0;
 			this.releaseDelay = 0;
 			this.fired = false;
@@ -39,7 +39,7 @@
 		Neuron.prototype.createSignal = function (particlePool, minSpeed, maxSpeed) {
 
 			this.firedCount += 1;
-			this.recievedSignal = false;
+			this.receivedSignal = false;
 
 			var signals = [];
 			// create signal to all connected axons
@@ -123,7 +123,7 @@
 				if (this.t>=1) {
 					this.t = 1;
 					this.alive = false;
-					this.axon.neuronB.recievedSignal = true;
+					this.axon.neuronB.receivedSignal = true;
 					this.axon.neuronB.prevReleaseAxon = this.axon;
 				}
 
@@ -132,7 +132,7 @@
 				if (this.t<=0) {
 					this.t = 0;
 					this.alive = false;
-					this.axon.neuronA.recievedSignal = true;
+					this.axon.neuronA.receivedSignal = true;
 					this.axon.neuronA.prevReleaseAxon = this.axon;
 				}
 			}
@@ -492,10 +492,10 @@
 				if (this.allSignals.length < this.currentMaxSignals-this.maxConnectionPerNeuron) {// currentMaxSignals - maxConnectionPerNeuron because allSignals can not bigger than particlePool size
                     // the astrocyte we're taking energy from
                     var a = n.canFire();
-					if(n.recievedSignal && a!=null) { // Astrocyte mode
-					// if (n.recievedSignal && n.firedCount < 8)  {	// Traversal mode
-					// if (n.recievedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
-					// if (n.recievedSignal && !n.fired )  {	// Single propagation mode
+					if(n.receivedSignal && a!=null) { // Astrocyte mode
+					// if (n.receivedSignal && n.firedCount < 8)  {	// Traversal mode
+					// if (n.receivedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
+					// if (n.receivedSignal && !n.fired )  {	// Single propagation mode
 						n.fired = true;
 						
 						// decrease energy level of astrocyte responsible for 
@@ -510,7 +510,7 @@
 
 				}
 
-				n.recievedSignal = false;	// if neuron recieved signal but still in delay reset it
+				n.receivedSignal = false;	// if neuron received signal but still in delay reset it
 
 				// natural regeneration of astrocyte energy
 				// occurs if the astrocyte has had enough time (30 seconds)
@@ -526,7 +526,7 @@
 					n = this.allNeurons[ii];
 					n.releaseDelay = 0;
 					n.fired = false;
-					n.recievedSignal = false;
+					n.receivedSignal = false;
 					n.firedCount = 0;
 				}
 				console.log("New signal released");
