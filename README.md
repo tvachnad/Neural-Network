@@ -2,6 +2,7 @@ Neural-Glial Network
 ==============
 
 [Demo](http://edlab-www.cs.umass.edu/~cjcorey/Neural-Network/index.html)
+
 [Paper](http://edlab-www.cs.umass.edu/~cjcorey/Neural-Network/FinalProjectWrite-Up.pdf)
 
 ##Modifications during simulation

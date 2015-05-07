@@ -82,6 +82,8 @@
 			this.lastUsed = 0;
 		}
 
+		// TODO: Get rid of this because we should never have a situation where the astrocyte energy is hard-reset, right?...
+		// Astrocytes should just regenerate energy at a constant rate and neurons pull from it if it's there and they need it...
 		Astrocyte.prototype.resetEnergy = function() {
 			this.availableEnergy = THREE.Math.randInt(astrocyte_settings.minEnergy, astrocyte_settings.maxEnergy);
 		};
@@ -494,9 +496,10 @@
 					// if (n.recievedSignal && n.firedCount < 8)  {	// Traversal mode
 					// if (n.recievedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
 					// if (n.recievedSignal && !n.fired )  {	// Single propagation mode
-						//console.log("fire");
 						n.fired = true;
-						//decrease energy level of astrocyte
+						
+						// decrease energy level of astrocyte responsible for 
+						// giving the neuron the energy it needed to fire
 						a.availableEnergy--;
 						a.lastUsed = currentTime;
 						n.lastSignalRelease = currentTime;
@@ -508,6 +511,13 @@
 				}
 
 				n.recievedSignal = false;	// if neuron recieved signal but still in delay reset it
+
+				// natural regeneration of astrocyte energy
+				// occurs if the astrocyte has had enough time (30 seconds)
+				// TODO: this value should be modifiable by the user as part of the control panel/GUI
+				if((currentTime-n.astrocyte.lastUsed)>30000) {
+					n.astrocyte.resetEnergy();
+				}
 			}
 
 			// reset all neurons and when there is X signal
@@ -518,7 +528,6 @@
 					n.fired = false;
 					n.recievedSignal = false;
 					n.firedCount = 0;
-					n.astrocyte.resetEnergy();	// reset astrocyte state
 				}
 				console.log("New signal released");
 				this.releaseSignalAt(this.allNeurons[THREE.Math.randInt(0, this.allNeurons.length)]);
@@ -648,7 +657,7 @@
 
 		var astrocyte_settings = {
 			minEnergy: 4, // default min
-			maxEnergy: 8 // default max
+			maxEnergy: 8, // default max
 		};
 
 		// Neural Net
@@ -669,8 +678,8 @@
 		gui_info.autoListen = false;
 
 		var gui_settings = gui.addFolder('Settings');
-		gui_settings.add(astrocyte_settings, 'minEnergy', 0, 10).name('Astrocyte min energy');
-		gui_settings.add(astrocyte_settings, 'maxEnergy', 0, 10).name('Astrocyte max energy');
+		gui_settings.add(astrocyte_settings, 'minEnergy', 0, 10).name('Min energy');
+		gui_settings.add(astrocyte_settings, 'maxEnergy', 0, 10).name('Max energy');
 		gui_settings.add(neuralNet, 'currentMaxSignals', 0, neuralNet.limitSignals).name('Max Signals');
 		gui_settings.add(neuralNet.particlePool, 'pSize', 0.2, 2).name('Signal Size');
 		gui_settings.add(neuralNet, 'signalMinSpeed', 0.01, 0.1, 0.01).name('Signal Min Speed');
