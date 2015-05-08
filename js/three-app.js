@@ -12,6 +12,7 @@
 			// the neurons this neuron is connected to
 			this.neurons = [];
 			this.receivedSignal = false;
+			this.signalCount = 0;
 			this.lastSignalRelease = 0;
 			this.releaseDelay = 0;
 			this.fired = false;
@@ -124,6 +125,7 @@
 					this.t = 1;
 					this.alive = false;
 					this.axon.neuronB.receivedSignal = true;
+					this.axon.neuronB.signalCount++;
 					this.axon.neuronB.prevReleaseAxon = this.axon;
 				}
 
@@ -133,6 +135,7 @@
 					this.t = 0;
 					this.alive = false;
 					this.axon.neuronA.receivedSignal = true;
+					this.axon.neuronA.signalCount++;
 					this.axon.neuronA.prevReleaseAxon = this.axon;
 				}
 			}
@@ -496,38 +499,45 @@
 					// if (n.receivedSignal && n.firedCount < 8)  {	// Traversal mode
 					// if (n.receivedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
 					// if (n.receivedSignal && !n.fired )  {	// Single propagation mode
+						
 						n.fired = true;
 						
 						// decrease energy level of astrocyte responsible for 
 						// giving the neuron the energy it needed to fire
 						a.availableEnergy--;
-						a.lastUsed = currentTime;
+						
 						n.lastSignalRelease = currentTime;
 						n.releaseDelay = THREE.Math.randInt(100, 1000);
 						this.releaseSignalAt(n);
-						
 					}
 
 				}
 
 				n.receivedSignal = false;	// if neuron received signal but still in delay reset it
-
-				// natural regeneration of astrocyte energy
-				// occurs if the astrocyte has had enough time (30 seconds)
-				// TODO: this value should be modifiable by the user as part of the control panel/GUI
-				if((currentTime-n.astrocyte.lastUsed)>30000) {
-					n.astrocyte.resetEnergy();
-				}
 			}
 
 			// reset all neurons and when there is X signal
 			if (this.allSignals.length <= 0) {
+
+				// first collect some stats
+				var allsignals = 0;
+				for(ii=0; ii<this.allNeurons.length; ii++) {
+					n = this.allNeurons[ii];
+					allsignals += n.signalCount;
+				}
+				var averagesignals = allsignals/this.allNeurons.length;
+				console.log("averagesignals: " + averagesignals);
+
 				for (ii=0; ii<this.allNeurons.length; ii++) {	// reset all neuron state
 					n = this.allNeurons[ii];
 					n.releaseDelay = 0;
 					n.fired = false;
 					n.receivedSignal = false;
 					n.firedCount = 0;
+					// reset all astrocytes
+					// TODO: in the future this should be adjustable and occur constantly,
+					// not just when the signal dies.
+					n.astrocyte.resetEnergy();
 				}
 				console.log("New signal released");
 				this.releaseSignalAt(this.allNeurons[THREE.Math.randInt(0, this.allNeurons.length)]);
@@ -597,7 +607,7 @@
 			this.numNeurons = this.allNeurons.length;
 			this.numAxons = this.allAxons.length;
 			this.numSignals = this.allSignals.length;
-			var activeAstros =0;
+			var activeAstros = 0;
 			for(i=0;i<this.numNeurons;i++){
 				if (this.allNeurons[i].astrocyte.availableEnergy>0)
 					activeAstros++;
