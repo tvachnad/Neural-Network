@@ -89,6 +89,15 @@
 			this.availableEnergy = THREE.Math.randInt(astrocyte_settings.minEnergy, astrocyte_settings.maxEnergy);
 		};
 
+		Astrocyte.prototype.deplete = function() {
+			this.availableEnergy--;
+			if(this.availableEnergy<=0) {
+				// make it take 50 iterations to be ready again
+				this.lastUsed = 5000;
+			}
+		};
+
+
 	// Signal ----------------------------------------------------------------
 
 		function Signal(particlePool, minSpeed, maxSpeed) {
@@ -504,7 +513,7 @@
 						
 						// decrease energy level of astrocyte responsible for 
 						// giving the neuron the energy it needed to fire
-						a.availableEnergy--;
+						a.deplete();
 						
 						n.lastSignalRelease = currentTime;
 						n.releaseDelay = THREE.Math.randInt(100, 1000);
@@ -514,16 +523,28 @@
 				}
 
 				n.receivedSignal = false;	// if neuron received signal but still in delay reset it
+				
+				// while we're iterating through the neurons, check each corresponding astrocyte to see if
+				// its energy was all used up, update time remaining until it gets its energy back, possibly
+				// give it its energy back if it's been long enough
+				// if(n.astrocyte.lastUsed>0) {
+				// 	console.log
+				// 	n.astrocyte.lastUsed--;
+				// } else {
+				// 	n.astrocyte.resetEnergy();
+				// }
 			}
 
 			// reset all neurons and when there is X signal
 			if (this.allSignals.length <= 0) {
 
-				// first collect some stats
+				// first collect some stats on average signal count
 				var allsignals = 0;
 				for(ii=0; ii<this.allNeurons.length; ii++) {
 					n = this.allNeurons[ii];
 					allsignals += n.signalCount;
+					// reset signal count for next time
+					n.signalCount=0;
 				}
 				var averagesignals = allsignals/this.allNeurons.length;
 				console.log("averagesignals: " + averagesignals);
