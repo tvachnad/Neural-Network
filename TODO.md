@@ -9,7 +9,7 @@
 - modify astrocyte initialized energy
   - random between min and max provided values
 
-1. **threshold**
+2. **threshold**
 
 - each neuron has to receive a certain # of signals to fire = 3
 - doesn’t mean exactly 3 signals were received, just that build up of signals/energy sums to 3
@@ -32,7 +32,7 @@ if m >= 3 && enough time has passed // refractory period
 - calculate average signals received per neuron
   - playing with threshold & refractory period
 
-1. **weights**
+3. **weights**
 
 - add weight to Connection object
   - modify above to
@@ -45,7 +45,7 @@ if m >= 3 && enough time has passed // refractory period
   - eventually: bell curve probability of weights 
 - 0-5-10 probability increases - higher at 5 then 0 and 10
 
-1. **inhibitors**
+4. **inhibitors**
 
 - 20% of neurons are inhibitors
 - inhibitors can have a larger weight value than excitatory
