@@ -87,24 +87,35 @@
 		// Astrocytes should just regenerate energy at a constant rate and neurons pull from it if it's there and they need it...
 		Astrocyte.prototype.resetEnergy = function() {
 			//this.availableEnergy = THREE.Math.randInt(astrocyte_settings.minEnergy, astrocyte_settings.maxEnergy);
-			this.availableEnergy = astrocyte_settings.maxEnergy;
-			console.log("reset: "+ this.availableEnergy);
+			
+					this.availableEnergy = astrocyte_settings.maxEnergy;
+					//console.log("reset: "+ this.availableEnergy);
+			
 		};
 
 		Astrocyte.prototype.deplete = function() {
-			this.availableEnergy -=0.125;
+			this.availableEnergy -= 0.125;
 			//console.log("available energy: "+this.availableEnergy);
 			if(this.availableEnergy<=astrocyte_settings.minEnergy) {
+				//console.log("depleted");
 				// make it take 5 iterations to be ready again
 				this.lastUsed = 100;
+				this.replenish();
 			}
 		};
 
-		// Astrocyte.prototype.replenish = function() {
-		// 	console.log("replenish");
-		// 	setInterval(this.resetEnergy, 3000);
+		Astrocyte.prototype.replenish = function() {
+			//console.log("pre replenish");
+			var that = this;
+				setTimeout(function(){
+					console.log("replenish");
+					that.resetEnergy();
+				}, 20000);
+			//clearTimeout(i);
+			// console.log("reset: "+ this.availableEnergy);
+		};
 
-		// };
+		
 
 
 	// Signal ----------------------------------------------------------------
@@ -536,12 +547,8 @@
 				// while we're iterating through the neurons, check each corresponding astrocyte to see if
 				// its energy was all used up, update time remaining until it gets its energy back, possibly
 				// give it its energy back if it's been long enough
-				if(n.astrocyte.availableEnergy==astrocyte_settings.minEnergy)
-					// n.astrocyte.replenish();
-				//n.astrocyte.resetEnergy();
-				setTimeout(function(){
-					n.astrocyte.resetEnergy()
-				}, 5000);
+				// if(n.astrocyte.availableEnergy<=astrocyte_settings.minEnergy)
+				// n.astrocyte.replenish();
 			}
 
 			// reset all neurons and when there is X signal
