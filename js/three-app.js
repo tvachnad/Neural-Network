@@ -61,13 +61,13 @@
 			//console.log(" i"+this.neurons.length);
 			var activeAstrocyte = null;
 			// see if the astrocyte directly linked to this neuron has the energy needed to fire
-			if(this.astrocyte.availableEnergy>0){
+			if(this.astrocyte.availableEnergy>astrocyte_settings.minEnergy){
 				return this.astrocyte;
 			}
 			// if we get here, the directly linked astrocyte did not have enough energy
 			// check the astrocytes of surrounding neurons to see if they have enough energy
 			for(var i=0; i<total; i++) {
-			 	if(this.neurons[i].astrocyte.availableEnergy>0) {
+			 	if(this.neurons[i].astrocyte.availableEnergy>astrocyte_settings.minEnergy) {
 			 		return this.neurons[i].astrocyte;
 			 	}
 			}
@@ -78,7 +78,7 @@
 	// Astrocyte -------------------------------------------------------------
 		function Astrocyte() {
 			// replaces the if firedCount < 8
-			this.availableEnergy = astrocyte_settings.minEnergy;
+			this.availableEnergy = astrocyte_settings.maxEnergy;
 			// currently this value is not being used but it allows room for future expansion
 			this.lastUsed = 0;
 		}
@@ -86,16 +86,25 @@
 		// TODO: Get rid of this because we should never have a situation where the astrocyte energy is hard-reset, right?...
 		// Astrocytes should just regenerate energy at a constant rate and neurons pull from it if it's there and they need it...
 		Astrocyte.prototype.resetEnergy = function() {
-			this.availableEnergy = THREE.Math.randInt(astrocyte_settings.minEnergy, astrocyte_settings.maxEnergy);
+			//this.availableEnergy = THREE.Math.randInt(astrocyte_settings.minEnergy, astrocyte_settings.maxEnergy);
+			this.availableEnergy = astrocyte_settings.maxEnergy;
+			console.log("reset: "+ this.availableEnergy);
 		};
 
 		Astrocyte.prototype.deplete = function() {
-			this.availableEnergy--;
-			if(this.availableEnergy<=0) {
-				// make it take 50 iterations to be ready again
-				this.lastUsed = 5000;
+			this.availableEnergy -=0.125;
+			//console.log("available energy: "+this.availableEnergy);
+			if(this.availableEnergy<=astrocyte_settings.minEnergy) {
+				// make it take 5 iterations to be ready again
+				this.lastUsed = 100;
 			}
 		};
+
+		// Astrocyte.prototype.replenish = function() {
+		// 	console.log("replenish");
+		// 	setInterval(this.resetEnergy, 3000);
+
+		// };
 
 
 	// Signal ----------------------------------------------------------------
@@ -523,16 +532,16 @@
 				}
 
 				n.receivedSignal = false;	// if neuron received signal but still in delay reset it
-				
+				//TODO
 				// while we're iterating through the neurons, check each corresponding astrocyte to see if
 				// its energy was all used up, update time remaining until it gets its energy back, possibly
 				// give it its energy back if it's been long enough
-				// if(n.astrocyte.lastUsed>0) {
-				// 	console.log
-				// 	n.astrocyte.lastUsed--;
-				// } else {
-				// 	n.astrocyte.resetEnergy();
-				// }
+				if(n.astrocyte.availableEnergy==astrocyte_settings.minEnergy)
+					// n.astrocyte.replenish();
+				//n.astrocyte.resetEnergy();
+				setTimeout(function(){
+					n.astrocyte.resetEnergy()
+				}, 5000);
 			}
 
 			// reset all neurons and when there is X signal
@@ -687,8 +696,8 @@
 		};
 
 		var astrocyte_settings = {
-			minEnergy: 4, // default min
-			maxEnergy: 8, // default max
+			minEnergy: 0, // default min
+			maxEnergy: 1, // default max
 		};
 
 		// Neural Net
@@ -709,8 +718,8 @@
 		gui_info.autoListen = false;
 
 		var gui_settings = gui.addFolder('Settings');
-		gui_settings.add(astrocyte_settings, 'minEnergy', 0, 10).name('Min energy');
-		gui_settings.add(astrocyte_settings, 'maxEnergy', 0, 10).name('Max energy');
+		gui_settings.add(astrocyte_settings, 'minEnergy', 0, 1).name('Min energy');
+		gui_settings.add(astrocyte_settings, 'maxEnergy', 0, 1).name('Max energy');
 		gui_settings.add(neuralNet, 'currentMaxSignals', 0, neuralNet.limitSignals).name('Max Signals');
 		gui_settings.add(neuralNet.particlePool, 'pSize', 0.2, 2).name('Signal Size');
 		gui_settings.add(neuralNet, 'signalMinSpeed', 0.01, 0.1, 0.01).name('Signal Min Speed');
