@@ -724,7 +724,7 @@
 	// ---------- GUI ----------
 
 		var gui = new dat.GUI();
-		gui.width = 300;
+		gui.width = 400;
 
 		var gui_info = gui.addFolder('Info');
 		gui_info.add(neuralNet, 'numNeurons').name('Neurons');
