@@ -337,8 +337,8 @@
 
 			// settings
 			this.verticesSkipStep = 2;	//2
-			this.maxAxonDist = 8;	//8
-			this.maxConnectionPerNeuron = 6;	//6
+			this.maxAxonDist = network_settings.AxonDistance;	//default 8
+			this.maxConnectionPerNeuron = network_settings.NeuronConnection;	//default 6
 
 			this.currentMaxSignals = 8000;
 			this.limitSignals = 12000;
@@ -707,6 +707,14 @@
 			maxEnergy: 1, // default max
 		};
 
+		var network_settings = {
+           AxonDistance: 8, //default
+           NeuronConnection: 6, //default
+           reload: function(){
+           	window.neuralNet = new NeuralNetwork();
+           	 }, // reinitializes the network
+		};
+
 		// Neural Net
 		var neuralNet = window.neuralNet = new NeuralNetwork();
 
@@ -728,6 +736,9 @@
 		gui_settings.add(astrocyte_settings, 'minEnergy', 0, 1).name('Min energy');
 		gui_settings.add(astrocyte_settings, 'maxEnergy', 0, 1).name('Max energy');
 		gui_settings.add(neuralNet, 'currentMaxSignals', 0, neuralNet.limitSignals).name('Max Signals');
+		gui_settings.add(network_settings, 'AxonDistance', 0, 20).name('Max Axon Distance');
+		gui_settings.add(network_settings, 'NeuronConnection', 0, 20).name('Max Neuron Connections');
+        gui_settings.add(network_settings, 'reload');
 		gui_settings.add(neuralNet.particlePool, 'pSize', 0.2, 2).name('Signal Size');
 		gui_settings.add(neuralNet, 'signalMinSpeed', 0.01, 0.1, 0.01).name('Signal Min Speed');
 		gui_settings.add(neuralNet, 'signalMaxSpeed', 0.01, 0.1, 0.01).name('Signal Max Speed');
