@@ -88,7 +88,7 @@
 		Astrocyte.prototype.resetEnergy = function() {
 			//this.availableEnergy = THREE.Math.randInt(astrocyte_settings.minEnergy, astrocyte_settings.maxEnergy);
 			
-					this.availableEnergy = astrocyte_settings.maxEnergy;
+					this.availableEnergy = astrocyte_settings.replenishEnergy;
 					//console.log("reset: "+ this.availableEnergy);
 			
 		};
@@ -110,7 +110,7 @@
 				setTimeout(function(){
 					console.log("replenish");
 					that.resetEnergy();
-				}, 20000);
+				}, astrocyte_settings.regenerationTime);
 			//clearTimeout(i);
 			// console.log("reset: "+ this.availableEnergy);
 		};
@@ -705,6 +705,8 @@
 		var astrocyte_settings = {
 			minEnergy: 0, // default min
 			maxEnergy: 1, // default max
+			replenishEnergy: 0.5, // amount of energy astrocyte regenerates 
+			regenerationTime: 20000 // time needed for energy to regenerate in milliseconds
 		};
 
 		var network_settings = {
@@ -730,18 +732,26 @@
 		gui_info.add(neuralNet, 'numAxons').name('Axons');
 		gui_info.add(neuralNet, 'numSignals', 0, neuralNet.limitSignals).name('Signals');
 		gui_info.add(neuralNet, 'numActiveAstrocytes', 0, neuralNet.numActiveAstrocytes).name('Active Astrocytes');
+		gui_info.add(astrocyte_settings, 'minEnergy').name('Min energy');
+		gui_info.add(astrocyte_settings, 'maxEnergy').name('Max energy');
 		gui_info.autoListen = false;
 
-		var gui_settings = gui.addFolder('Settings');
-		gui_settings.add(astrocyte_settings, 'minEnergy', 0, 1).name('Min energy');
-		gui_settings.add(astrocyte_settings, 'maxEnergy', 0, 1).name('Max energy');
+		var gui_settings = gui.addFolder('Network Settings');
 		gui_settings.add(neuralNet, 'currentMaxSignals', 0, neuralNet.limitSignals).name('Max Signals');
 		gui_settings.add(network_settings, 'AxonDistance', 0, 20).name('Max Axon Distance');
 		gui_settings.add(network_settings, 'NeuronConnection', 0, 20).name('Max Neuron Connections');
-        gui_settings.add(network_settings, 'reload');
-		gui_settings.add(neuralNet.particlePool, 'pSize', 0.2, 2).name('Signal Size');
 		gui_settings.add(neuralNet, 'signalMinSpeed', 0.01, 0.1, 0.01).name('Signal Min Speed');
 		gui_settings.add(neuralNet, 'signalMaxSpeed', 0.01, 0.1, 0.01).name('Signal Max Speed');
+		gui_settings.add(network_settings, 'reload');
+		gui_settings.open();
+
+		var gui_settings = gui.addFolder('Astrocyte Settings');
+		gui_settings.add(astrocyte_settings, 'replenishEnergy', 0, 1).name('replenish energy amount');
+		gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 100000).name('energy regeneration time in ms');
+		gui_settings.open();
+
+		var gui_settings = gui.addFolder('Visual Settings');
+		gui_settings.add(neuralNet.particlePool, 'pSize', 0.2, 2).name('Signal Size');
 		gui_settings.add(neuralNet, 'neuronSize', 0, 2).name('Neuron Size');
 		gui_settings.add(neuralNet, 'neuronOpacity', 0, 1.0).name('Neuron Opacity');
 		gui_settings.add(neuralNet, 'axonOpacityMultiplier', 0.0, 5.0).name('Axon Opacity Mult');
@@ -750,7 +760,7 @@
 		gui_settings.addColor(neuralNet, 'axonColor').name('Axon Color');
 		gui_settings.addColor(scene_settings, 'bgColor').name('Background');
 
-		gui_info.open();
+        gui_info.open();
 		// a_settings.open();
 		gui_settings.open();
 
