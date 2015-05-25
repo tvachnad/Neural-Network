@@ -1,9 +1,13 @@
 # Network Modifications
 
+**Activation Function**
+-integrate activation function in neurons.
+
+
 **Astrocyte Energy Regeneration**
 
 - accumulation rate
-  - include this regeneration rate as a modifiable variable
+  - Option to regenerate as wave function over time.
 - if it’s too high, they would never run out
 - if it’s too low, the signals would still die out
 - modify astrocyte initialized energy
@@ -34,6 +38,14 @@ if m >= 3 && enough time has passed // refractory period
 
 **Weights**
 
+-Human Like Connectivity
+ - neuron randomly chooses their number of connections from a power-law distribution.
+  -few neurons have many connections, most neurons have few connections.
+   -what happens to max distance allowed for connection?
+  -graphical interface allowing to specify the distribution.
+ -make connectivity look like human brain connectivity matrices.
+  -primary sensory inputs, motor (decision) outputs.  
+  
 - add weight to Connection object
   - modify above to
     - mi ← max(mi + SUM0,connections.length(wi*signalsi(now)) - 0.1, 0)
@@ -52,3 +64,11 @@ if m >= 3 && enough time has passed // refractory period
   - 0-p of positive and 0-n of negative and possibly modify these values
 - neuron has boolean: inhibitor true/false
   -eventually: colorful difference between inhibitory and excitatory signals
+
+**STDP**
+
+-implement Spike-timing dependent plasticity, and a learning task. -reinforcement-stdp?
+-update connection weights, based on firing patterns.
+
+
+
