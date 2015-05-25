@@ -10,7 +10,7 @@
   - Option to regenerate as wave function over time.
 - if it’s too high, they would never run out
 - if it’s too low, the signals would still die out
-- modify astrocyte initialized energy
+- modify astrocyte initialized energy (currently set at max).
   - random between min and max provided values
 
 **Threshold**
@@ -39,11 +39,11 @@ if m >= 3 && enough time has passed // refractory period
 **Weights**
 
 - Human Like Connectivity
- - neuron randomly chooses their number of connections from a power-law distribution.
-  - few neurons have many connections, most neurons have few connections.
-   - what happens to max distance allowed for connection?
+  - neuron randomly chooses their number of connections from a power-law distribution.
+    - few neurons have many connections, most neurons have few connections.
+    - what happens to max distance allowed for connection?
   - graphical interface allowing to specify the distribution.
- - make connectivity look like human brain connectivity matrices.
+  - make connectivity look like human brain connectivity matrices.
   - primary sensory inputs, motor (decision) outputs.  
 
 - add weight to Connection object
