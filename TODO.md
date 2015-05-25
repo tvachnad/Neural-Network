@@ -1,7 +1,7 @@
 # Network Modifications
 
 **Activation Function**
--integrate activation function in neurons.
+- integrate activation function in neurons.
 
 
 **Astrocyte Energy Regeneration**
@@ -38,14 +38,14 @@ if m >= 3 && enough time has passed // refractory period
 
 **Weights**
 
--Human Like Connectivity
+- Human Like Connectivity
  - neuron randomly chooses their number of connections from a power-law distribution.
-  -few neurons have many connections, most neurons have few connections.
-   -what happens to max distance allowed for connection?
-  -graphical interface allowing to specify the distribution.
- -make connectivity look like human brain connectivity matrices.
-  -primary sensory inputs, motor (decision) outputs.  
-  
+  - few neurons have many connections, most neurons have few connections.
+   - what happens to max distance allowed for connection?
+  - graphical interface allowing to specify the distribution.
+ - make connectivity look like human brain connectivity matrices.
+  - primary sensory inputs, motor (decision) outputs.  
+
 - add weight to Connection object
   - modify above to
     - mi ← max(mi + SUM0,connections.length(wi*signalsi(now)) - 0.1, 0)
@@ -67,8 +67,8 @@ if m >= 3 && enough time has passed // refractory period
 
 **STDP**
 
--implement Spike-timing dependent plasticity, and a learning task. -reinforcement-stdp?
--update connection weights, based on firing patterns.
+- implement Spike-timing dependent plasticity, and a learning task. -reinforcement-stdp?
+- update connection weights, based on firing patterns.
 
 
 
