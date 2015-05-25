@@ -7,10 +7,6 @@ Neural-Glial Network
 
 ##Modifications during simulation
 
-###Astrocyte Settings
-
-The amount of energy that is regenerated per turn can be changed by adjusting "replenish energy amount" setting. The time needed to regenerate that amount can be adjusted by modifying "energy regeneration time in ms".
-
 ###Network Settings
 
 Signal properties can be adjusted. The maximum number of signals allowed to exist at once can be modified by changing "Max Signals" attribute. The speed of the signals can be changed from "Signal Min Speed", "Signal Max Speed".
@@ -19,7 +15,11 @@ Signal properties can be adjusted. The maximum number of signals allowed to exis
 
 Currently, all attributes take effect in real time, except "Max Neuron Connections" and "Max Axon Distance".
 
-###Non-functional changes
+###Astrocyte Settings
+
+The amount of energy that is regenerated per turn can be changed by adjusting "replenish energy amount" setting. The time needed to regenerate that amount can be adjusted by modifying "energy regeneration time in ms".
+
+###Visual Settings
 
 Changing any of the following attributes will have no affect on network functionality:
 - Neuron Size
