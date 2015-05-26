@@ -9,15 +9,19 @@ Neural-Glial Network
 
 ###Network Settings
 
-Signal properties can be adjusted. The maximum number of signals allowed to exist at once can be modified by changing "Max Signals" attribute. The speed of the signals can be changed from "Signal Min Speed", "Signal Max Speed".
-
-"Max Axon Distance" represents the farthest allowed connection distance between two neurons. "Max Neuron Connections" represents the maximum number of connections a neuron can have. After changing these two attributes, the "reload" button has to be pressed in order for them to take effect. This changes the whole structure of the brain.
-
-Currently, all attributes take effect in real time, except "Max Neuron Connections" and "Max Axon Distance".
+- Max Signals - the maximum number of signals allowed to exist at once.
+- Signal Min Speed/Max Speed - the speed of the signal.
+- Max Axon Distance - the farthest allowed connection a neuron can have.
+- Max Neuron Connections - the maximum number of connections a neuron can have.
+- reload - in order for "Max Axon Distance" and "Max Neuron Connections" to take effect the network has to be re-rendered. All the other attributes take effect in real time.
 
 ###Astrocyte Settings
 
-The amount of energy that is regenerated per turn can be changed by adjusting "replenish energy amount" setting. The time needed to regenerate that amount can be adjusted by modifying "energy regeneration time in ms".
+All attributes take effect in real time
+- replenish energy amount - the amount of energy regenerated per turn.
+- energy regeneration time in ms - the time needed to regenerate that amount of energy.
+- Threshold for energy regeneration - threshold at which energy regeneration starts.
+
 
 ###Visual Settings
 

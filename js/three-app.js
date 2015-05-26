@@ -94,10 +94,8 @@
 		};
 
 		Astrocyte.prototype.deplete = function() {
-			this.availableEnergy -= 0.125;
-			//console.log("available energy: "+this.availableEnergy);
-			if(this.availableEnergy<=astrocyte_settings.minEnergy) {
-				//console.log("depleted");
+			this.availableEnergy -= 0.125; //energy needed to fire a signal default: 1/8
+			if(this.availableEnergy<=astrocyte_settings.minThreshold) {
 				// make it take 5 iterations to be ready again
 				this.lastUsed = 100;
 				this.replenish();
@@ -339,6 +337,8 @@
 			this.verticesSkipStep = 2;	//2
 			this.maxAxonDist = network_settings.AxonDistance;	//default 8
 			this.maxConnectionPerNeuron = network_settings.NeuronConnection;	//default 6
+
+			this.firing_threshold = 0.5 // threshold to fire signal (not used yet)
 
 			this.currentMaxSignals = 8000;
 			this.limitSignals = 12000;
@@ -706,7 +706,8 @@
 			minEnergy: 0, // default min
 			maxEnergy: 1, // default max
 			replenishEnergy: 0.5, // amount of energy astrocyte regenerates 
-			regenerationTime: 20000 // time needed for energy to regenerate in milliseconds
+			regenerationTime: 20000, // time needed for energy to regenerate in milliseconds
+			minThreshold: 0.125 // energy level at which the astrocyte starts regenerating energy
 		};
 
 		var network_settings = {
@@ -746,8 +747,9 @@
 		gui_settings.open();
 
 		var gui_settings = gui.addFolder('Astrocyte Settings');
-		gui_settings.add(astrocyte_settings, 'replenishEnergy', 0, 1).name('replenish energy amount');
-		gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 100000).name('energy regeneration time in ms');
+		gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Threshold for energy regeneration');
+		gui_settings.add(astrocyte_settings, 'replenishEnergy', 0, 1).name('Replenish energy amount');
+		gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 100000).name('Energy regeneration time in ms');
 		gui_settings.open();
 
 		var gui_settings = gui.addFolder('Visual Settings');
