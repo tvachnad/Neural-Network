@@ -18,9 +18,9 @@ Neural-Glial Network
 ###Astrocyte Settings
 
 All attributes take effect in real time
-- replenish energy amount - the amount of energy regenerated per turn.
+- replenish energy amount - the amount of energy regenerated per turn. 
 - energy regeneration time in ms - the time needed to regenerate that amount of energy.
-- Threshold for energy regeneration - threshold at which energy regeneration starts.
+- Threshold for energy regeneration - threshold at which energy regeneration starts. // no longer needed because there is constant energy regeneration.
 
 
 ###Visual Settings

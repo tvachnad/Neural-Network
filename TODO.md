@@ -46,7 +46,7 @@ if m >= 3 && enough time has passed // refractory period
   - make connectivity look like human brain connectivity matrices.
   - primary sensory inputs, motor (decision) outputs.  
 
-- add weight to Connection object
+- add weight to Connection object (axon)
   - modify above to
     - mi ← max(mi + SUM0,connections.length(wi*signalsi(now)) - 0.1, 0)
 

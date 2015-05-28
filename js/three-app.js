@@ -1,5 +1,4 @@
 
-
 (function main() { "use strict";
 
 	// Neuron ----------------------------------------------------------------
@@ -87,7 +86,9 @@
 		// Astrocytes should just regenerate energy at a constant rate and neurons pull from it if it's there and they need it...
 		Astrocyte.prototype.resetEnergy = function() {
 			//this.availableEnergy = THREE.Math.randInt(astrocyte_settings.minEnergy, astrocyte_settings.maxEnergy);
-			
+			        if(this.availableEnergy + astrocyte_settings.replenishEnergy > astrocyte_settings.maxEnergy)
+			        	this.availableEnergy = astrocyte_settings.maxEnergy;
+			        else
 					this.availableEnergy = astrocyte_settings.replenishEnergy;
 					//console.log("reset: "+ this.availableEnergy);
 			
@@ -95,7 +96,7 @@
 
 		Astrocyte.prototype.deplete = function() {
 			this.availableEnergy -= 0.125; //energy needed to fire a signal default: 1/8
-			if(this.availableEnergy<=astrocyte_settings.minThreshold) {
+			if(this.availableEnergy<=astrocyte_settings.maxEnergy) {
 				// make it take 5 iterations to be ready again
 				this.lastUsed = 100;
 				this.replenish();
@@ -105,7 +106,7 @@
 		Astrocyte.prototype.replenish = function() {
 			//console.log("pre replenish");
 			var that = this;
-				setTimeout(function(){
+				setInterval(function(){
 					console.log("replenish");
 					that.resetEnergy();
 				}, astrocyte_settings.regenerationTime);
@@ -707,7 +708,7 @@
 			maxEnergy: 1, // default max
 			replenishEnergy: 0.5, // amount of energy astrocyte regenerates 
 			regenerationTime: 20000, // time needed for energy to regenerate in milliseconds
-			minThreshold: 0.125 // energy level at which the astrocyte starts regenerating energy
+			//minThreshold: 0.125 // energy level at which the astrocyte starts regenerating energy
 		};
 
 		var network_settings = {
@@ -747,7 +748,7 @@
 		gui_settings.open();
 
 		var gui_settings = gui.addFolder('Astrocyte Settings');
-		gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Threshold for energy regeneration');
+		//gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Threshold for energy regeneration');
 		gui_settings.add(astrocyte_settings, 'replenishEnergy', 0, 1).name('Replenish energy amount');
 		gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 100000).name('Energy regeneration time in ms');
 		gui_settings.open();
