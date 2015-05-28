@@ -795,7 +795,7 @@
 		gui_settings.add(astrocyte_settings, 'replenishEnergy', 0, 1).name('Replenish energy amount').listen();
 		gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 100000).name('Energy regeneration time in ms');
 		gui_settings.add(astrocyte_settings, 'minAmplitude', 0, 1).name('Minimum Amplitude');
-		gui_settings.add(astrocyte_settings, 'maxAmplitude', 0, 1).name('Minimum Amplitude');
+		gui_settings.add(astrocyte_settings, 'maxAmplitude', 0, 1).name('Maximum Amplitude');
 		gui_settings.add(astrocyte_settings, 'frequency', 0, 20000).name('frequency for change in energy in ms');
 		gui_settings.add(astrocyte_settings, 'mean', 0, 1).name('Amount of energy change');
 		gui_settings.open();
