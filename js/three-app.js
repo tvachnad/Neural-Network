@@ -399,25 +399,25 @@
 
 		NeuralNetwork.prototype.regenerationFunction = function() {
 			var increasing;
-			if(astrocyte_settings.replenishEnergy >= astrocyte_settings.minAmplitude)
+			if(astrocyte_settings.replenishEnergy >= astrocyte_settings.minThreshold)
 				increasing = true;
 			else
 				increasing = false;
 			var increase = function(){
-				if(astrocyte_settings.replenishEnergy+astrocyte_settings.mean > astrocyte_settings.maxAmplitude){
+				if(astrocyte_settings.replenishEnergy+astrocyte_settings.amplitude > astrocyte_settings.maxThreshold){
 					increasing = false;
 					decrease();
 				}
 				else
-					astrocyte_settings.replenishEnergy += astrocyte_settings.mean;
+					astrocyte_settings.replenishEnergy += astrocyte_settings.amplitude;
 			};
 			var decrease = function(){
-				if(astrocyte_settings.replenishEnergy-astrocyte_settings.mean < astrocyte_settings.minAmplitude){
+				if(astrocyte_settings.replenishEnergy-astrocyte_settings.amplitude < astrocyte_settings.minThreshold){
 					increasing = true;
 					increase();
 				}
 				else
-					astrocyte_settings.replenishEnergy -= astrocyte_settings.mean;
+					astrocyte_settings.replenishEnergy -= astrocyte_settings.amplitude;
 			};
 			var regeneration = function(){
 
@@ -748,10 +748,10 @@
 			replenishEnergy: 0.5, // amount of energy astrocyte regenerates 
 			regenerationTime: 20000, // time needed for energy to regenerate in milliseconds
 			//minThreshold: 0.125, // energy level at which the astrocyte starts regenerating energy
-			minAmplitude: 0.2, //
-			maxAmplitude: 0.8, //
+			minThreshold: 0.2, //
+			maxThreshold: 0.8, //
 			frequency: 1000, // in milliseconds
-			mean: 0.1 // increased by this amount
+			amplitude: 0.1 // increased by this amount
 		};
 
 		var network_settings = {
@@ -794,10 +794,10 @@
 		//gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Threshold for energy regeneration');
 		gui_settings.add(astrocyte_settings, 'replenishEnergy', 0, 1).name('Replenish energy amount').listen();
 		gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 100000).name('Energy regeneration time in ms');
-		gui_settings.add(astrocyte_settings, 'minAmplitude', 0, 1).name('Minimum Amplitude');
-		gui_settings.add(astrocyte_settings, 'maxAmplitude', 0, 1).name('Maximum Amplitude');
+		gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Minimum Threshold');
+		gui_settings.add(astrocyte_settings, 'maxThreshold', 0, 1).name('Maximum Threshold');
 		gui_settings.add(astrocyte_settings, 'frequency', 0, 20000).name('frequency for change in energy in ms');
-		gui_settings.add(astrocyte_settings, 'mean', 0, 1).name('Amount of energy change');
+		gui_settings.add(astrocyte_settings, 'amplitude', 0, 1).name('Amount of energy change');
 		gui_settings.open();
 
 		// controller.onFinishChange(function(value){

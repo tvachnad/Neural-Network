@@ -23,8 +23,8 @@ All attributes take effect in real time
 - Threshold for energy regeneration - threshold at which energy regeneration starts. // no longer needed because there is constant energy regeneration.
 Energy regeneration function settings:
 (the amount of energy replenished changes over time depending on the settings below, "replenish energy amount" is changed accordingly)
-- Minimum Amplitude - the amount replenished never goes below this threshold.
-- Maximum Amplitude - the amount replenished never goes above this threshold.
+- Minimum Threshold - the amount replenished never goes below this threshold.
+- Maximum Threshold - the amount replenished never goes above this threshold.
 - frequency for change in energy in ms - frequency that the changes occur.
 - Amount of energy change - the amount that "replenish energy amount" will be changed by.
 
