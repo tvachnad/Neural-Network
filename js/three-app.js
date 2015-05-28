@@ -89,14 +89,14 @@
 			        if(this.availableEnergy + astrocyte_settings.replenishEnergy > astrocyte_settings.maxEnergy)
 			        	this.availableEnergy = astrocyte_settings.maxEnergy;
 			        else
-					this.availableEnergy = astrocyte_settings.replenishEnergy;
+					this.availableEnergy += astrocyte_settings.replenishEnergy;
 					//console.log("reset: "+ this.availableEnergy);
 			
 		};
 
 		Astrocyte.prototype.deplete = function() {
 			this.availableEnergy -= 0.125; //energy needed to fire a signal default: 1/8
-			if(this.availableEnergy<=astrocyte_settings.maxEnergy) {
+			if(this.availableEnergy<=astrocyte_settings.maxEnergy) { // if energy not full, then regenerate more
 				// make it take 5 iterations to be ready again
 				this.lastUsed = 100;
 				this.replenish();
@@ -106,6 +106,7 @@
 		Astrocyte.prototype.replenish = function() {
 			//console.log("pre replenish");
 			var that = this;
+			//keeps regenerating energy
 				setInterval(function(){
 					console.log("replenish");
 					that.resetEnergy();
