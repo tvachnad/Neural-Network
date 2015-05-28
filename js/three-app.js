@@ -108,14 +108,12 @@
 			var that = this;
 			//keeps regenerating energy
 				setInterval(function(){
-					console.log("replenish");
+					//console.log("replenish");
 					that.resetEnergy();
 				}, astrocyte_settings.regenerationTime);
 			//clearTimeout(i);
 			// console.log("reset: "+ this.availableEnergy);
 		};
-
-		
 
 
 	// Signal ----------------------------------------------------------------
@@ -399,6 +397,38 @@
 
 		}
 
+		NeuralNetwork.prototype.regenerationFunction = function() {
+			var increasing;
+			if(astrocyte_settings.replenishEnergy >= astrocyte_settings.minAmplitude)
+				increasing = true;
+			else
+				increasing = false;
+			var increase = function(){
+				if(astrocyte_settings.replenishEnergy+astrocyte_settings.mean > astrocyte_settings.maxAmplitude){
+					increasing = false;
+					decrease();
+				}
+				else
+					astrocyte_settings.replenishEnergy += astrocyte_settings.mean;
+			};
+			var decrease = function(){
+				if(astrocyte_settings.replenishEnergy-astrocyte_settings.mean < astrocyte_settings.minAmplitude){
+					increasing = true;
+					increase();
+				}
+				else
+					astrocyte_settings.replenishEnergy -= astrocyte_settings.mean;
+			};
+			var functionRegeneration = setInterval(function(){
+				if(increasing)
+					increase();
+				else if(!increasing)
+					decrease();
+				console.log(astrocyte_settings.replenishEnergy);
+			}, astrocyte_settings.frequency);
+
+		};
+
 		NeuralNetwork.prototype.initNeuralNetwork = function () {
 
 			// obj loader
@@ -428,6 +458,7 @@
 
 				console.log('Neural Network initialized');
 				document.getElementById('loading').style.display = 'none';	// hide loading animation when finish loading model
+				self.regenerationFunction();
 
 			}); // end of loader
 
@@ -652,6 +683,7 @@
 					activeAstros++;
 			}
 			this.numActiveAstrocytes = activeAstros;
+			
 
 		};
 
@@ -709,7 +741,11 @@
 			maxEnergy: 1, // default max
 			replenishEnergy: 0.5, // amount of energy astrocyte regenerates 
 			regenerationTime: 20000, // time needed for energy to regenerate in milliseconds
-			//minThreshold: 0.125 // energy level at which the astrocyte starts regenerating energy
+			//minThreshold: 0.125, // energy level at which the astrocyte starts regenerating energy
+			minAmplitude: 0.2, //
+			maxAmplitude: 0.8, //
+			frequency: 1000, // in milliseconds
+			mean: 0.1 // increased by this amount
 		};
 
 		var network_settings = {
@@ -750,9 +786,18 @@
 
 		var gui_settings = gui.addFolder('Astrocyte Settings');
 		//gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Threshold for energy regeneration');
-		gui_settings.add(astrocyte_settings, 'replenishEnergy', 0, 1).name('Replenish energy amount');
+		gui_settings.add(astrocyte_settings, 'replenishEnergy', 0, 1).name('Replenish energy amount').listen();
 		gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 100000).name('Energy regeneration time in ms');
+		gui_settings.add(astrocyte_settings, 'minAmplitude', 0, 1).name('Minimum Amplitude');
+		gui_settings.add(astrocyte_settings, 'maxAmplitude', 0, 1).name('Minimum Amplitude');
+		var controller = gui_settings.add(astrocyte_settings, 'frequency', 0, 20000).name('frequency for change in energy in ms');
+		gui_settings.add(astrocyte_settings, 'mean', 0, 1).name('Amount of energy change');
 		gui_settings.open();
+
+		controller.onFinishChange(function(value){
+			//clearInterval(functionRegeneration);
+			window.neuralNet.regenerationFunction();
+		});
 
 		var gui_settings = gui.addFolder('Visual Settings');
 		gui_settings.add(neuralNet.particlePool, 'pSize', 0.2, 2).name('Signal Size');
