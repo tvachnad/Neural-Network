@@ -419,13 +419,19 @@
 				else
 					astrocyte_settings.replenishEnergy -= astrocyte_settings.mean;
 			};
-			var functionRegeneration = setInterval(function(){
+			var regeneration = function(){
+
+			 setTimeout(function(){
 				if(increasing)
 					increase();
 				else if(!increasing)
 					decrease();
-				console.log(astrocyte_settings.replenishEnergy);
+				regeneration();
+				//console.log(astrocyte_settings.replenishEnergy);
 			}, astrocyte_settings.frequency);
+			 
+			}
+			regeneration();
 
 		};
 
@@ -790,14 +796,14 @@
 		gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 100000).name('Energy regeneration time in ms');
 		gui_settings.add(astrocyte_settings, 'minAmplitude', 0, 1).name('Minimum Amplitude');
 		gui_settings.add(astrocyte_settings, 'maxAmplitude', 0, 1).name('Minimum Amplitude');
-		var controller = gui_settings.add(astrocyte_settings, 'frequency', 0, 20000).name('frequency for change in energy in ms');
+		gui_settings.add(astrocyte_settings, 'frequency', 0, 20000).name('frequency for change in energy in ms');
 		gui_settings.add(astrocyte_settings, 'mean', 0, 1).name('Amount of energy change');
 		gui_settings.open();
 
-		controller.onFinishChange(function(value){
-			//clearInterval(functionRegeneration);
-			window.neuralNet.regenerationFunction();
-		});
+		// controller.onFinishChange(function(value){
+		// 	//clearInterval(functionRegeneration);
+		// 	window.neuralNet.regenerationFunction();
+		// });
 
 		var gui_settings = gui.addFolder('Visual Settings');
 		gui_settings.add(neuralNet.particlePool, 'pSize', 0.2, 2).name('Signal Size');
