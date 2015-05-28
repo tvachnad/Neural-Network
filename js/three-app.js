@@ -797,7 +797,7 @@
 		gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Minimum Threshold');
 		gui_settings.add(astrocyte_settings, 'maxThreshold', 0, 1).name('Maximum Threshold');
 		gui_settings.add(astrocyte_settings, 'frequency', 0, 20000).name('frequency for change in energy in ms');
-		gui_settings.add(astrocyte_settings, 'amplitude', 0, 1).name('Amount of energy change');
+		gui_settings.add(astrocyte_settings, 'amplitude', 0, 1).name('Amplitude');
 		gui_settings.open();
 
 		// controller.onFinishChange(function(value){

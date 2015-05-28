@@ -26,7 +26,7 @@ Energy regeneration function settings:
 - Minimum Threshold - the amount replenished never goes below this threshold.
 - Maximum Threshold - the amount replenished never goes above this threshold.
 - frequency for change in energy in ms - frequency that the changes occur.
-- Amount of energy change - the amount that "replenish energy amount" will be changed by.
+- Amplitude - the amount that "replenish energy amount" will be changed by.
 
 
 ###Visual Settings
