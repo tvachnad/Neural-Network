@@ -621,7 +621,7 @@
 					}
 
 				}
-				//n.decay();
+				n.decay();
 				//console.log(n.acc);
 
 				n.receivedSignal = false;	// if neuron received signal but still in delay reset it
