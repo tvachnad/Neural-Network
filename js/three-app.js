@@ -17,8 +17,11 @@
 			this.fired = false;
 			this.firedCount = 0;
 			this.prevReleaseAxon = null;
-			THREE.Vector3.call(this, x, y, z);
 
+			//neuron fires when this number passes the firing threshold
+			this.acc = 0;
+
+			THREE.Vector3.call(this, x, y, z);
 		}
 
 		Neuron.prototype = Object.create(THREE.Vector3.prototype);
@@ -53,24 +56,55 @@
 			return signals;
 
 		};
-          //returns active astrocytes, it's taking energy from
+          //returns active astrocyte, it's taking energy from
 		Neuron.prototype.canFire = function() {
-
-			var total = this.neurons.length;
-			//console.log(" i"+this.neurons.length);
-			var activeAstrocyte = null;
-			// see if the astrocyte directly linked to this neuron has the energy needed to fire
-			if(this.astrocyte.availableEnergy>astrocyte_settings.minEnergy){
-				return this.astrocyte;
-			}
-			// if we get here, the directly linked astrocyte did not have enough energy
-			// check the astrocytes of surrounding neurons to see if they have enough energy
-			for(var i=0; i<total; i++) {
-			 	if(this.neurons[i].astrocyte.availableEnergy>astrocyte_settings.minEnergy) {
-			 		return this.neurons[i].astrocyte;
-			 	}
+			if(this.acc >= network_settings.firing_threshold ){
+				var total = this.neurons.length;
+				//console.log(" i"+this.neurons.length);
+				var activeAstrocyte = null;
+				// see if the astrocyte directly linked to this neuron has the energy needed to fire
+				if(this.astrocyte.availableEnergy>astrocyte_settings.minEnergy){
+					return this.astrocyte;
+				}
+				// if we get here, the directly linked astrocyte did not have enough energy
+				// check the astrocytes of surrounding neurons to see if they have enough energy
+				for(var i=0; i<total; i++) {
+				 	if(this.neurons[i].astrocyte.availableEnergy>astrocyte_settings.minEnergy) {
+				 		return this.neurons[i].astrocyte;
+				 	}
+				}
 			}
 			return null;
+
+		};
+
+        //decay function for neurons
+		Neuron.prototype.decay = function() {
+			this.acc = 0.9 * this.acc;
+			if(this.acc < 0)
+				this.acc = 0; 
+		};
+
+		//accumulation function when recieving a signal
+		Neuron.prototype.build = function() {
+			this.acc += network_settings.signal_weight; // each signal adds 1/6.
+
+		};
+
+		//neuron firing function with probability of firing equal to the energy level
+		Neuron.prototype.fire = function() {
+			var rand = Math.random();
+			if(rand < this.acc){
+				this.fired = true;
+				this.acc = this.acc - 0.125; // resets energy of neuron
+				// decrease energy level of astrocyte responsible for 
+				// giving the neuron the energy it needed to fire
+				this.releaseDelay = THREE.Math.randInt(100, 1000);
+				return true;
+			}
+			else{
+				return false; // didn't fire
+			}
 
 		};
 
@@ -338,7 +372,7 @@
 			this.maxAxonDist = network_settings.AxonDistance;	//default 8
 			this.maxConnectionPerNeuron = network_settings.NeuronConnection;	//default 6
 
-			this.firing_threshold = 0.5 // threshold to fire signal (not used yet)
+			this.firing_threshold = network_settings.firing_threshold; // threshold to fire signal (not used yet)
 
 			this.currentMaxSignals = 8000;
 			this.limitSignals = 12000;
@@ -568,18 +602,27 @@
 					// if (n.receivedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
 					// if (n.receivedSignal && !n.fired )  {	// Single propagation mode
 						
-						n.fired = true;
+						// n.fired = true;
+						// n.acc = n.acc - 0.125; // resets energy of neuron
+						// // decrease energy level of astrocyte responsible for 
+						// // giving the neuron the energy it needed to fire
+						// a.deplete();
 						
-						// decrease energy level of astrocyte responsible for 
-						// giving the neuron the energy it needed to fire
-						a.deplete();
-						
-						n.lastSignalRelease = currentTime;
-						n.releaseDelay = THREE.Math.randInt(100, 1000);
-						this.releaseSignalAt(n);
+						// n.lastSignalRelease = currentTime;
+						// n.releaseDelay = THREE.Math.randInt(100, 1000);
+						if(n.fire() === true){
+							a.deplete();
+							n.lastSignalRelease = currentTime;
+							this.releaseSignalAt(n);
+						}
+					}
+					else{
+						n.build();
 					}
 
 				}
+				//n.decay();
+				//console.log(n.acc);
 
 				n.receivedSignal = false;	// if neuron received signal but still in delay reset it
 				//TODO
@@ -755,8 +798,11 @@
 		};
 
 		var network_settings = {
+			firing_threshold: 0.5, // neuron fires when reaching this amount.
+			signal_weight: 0.167, // energy of neuron increases by this amount per signal.
            AxonDistance: 8, //default
            NeuronConnection: 6, //default
+
            reload: function(){
            	window.neuralNet = new NeuralNetwork();
            	 }, // reinitializes the network
@@ -804,6 +850,10 @@
 		// 	//clearInterval(functionRegeneration);
 		// 	window.neuralNet.regenerationFunction();
 		// });
+
+		var gui_settings = gui.addFolder('Activation Function Settings');
+		gui_settings.add(network_settings, 'firing_threshold', 0, 1).name("Firing Threshold");
+		gui_settings.add(network_settings, 'signal_weight', 0, 1).name("Signal Weight");
 
 		var gui_settings = gui.addFolder('Visual Settings');
 		gui_settings.add(neuralNet.particlePool, 'pSize', 0.2, 2).name('Signal Size');

@@ -28,6 +28,12 @@ Energy regeneration function settings:
 - frequency for change in energy in ms - frequency that the changes occur.
 - Amplitude - the amount that "replenish energy amount" will be changed by.
 
+###Activation Function Settings
+
+When neuron is ready to fire it fires with a probability equal to its energy level at that time.
+- Firing Threshold - when the energy level of the neuron reaches this threshold the neuron fires.
+- Signal Weight - the amount of energy that is added to a neuron when it recieves a signal.
+
 
 ###Visual Settings
 
