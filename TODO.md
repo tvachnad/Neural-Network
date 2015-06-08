@@ -69,6 +69,3 @@ if m >= 3 && enough time has passed // refractory period
 
 - implement Spike-timing dependent plasticity, and a learning task. -reinforcement-stdp?
 - update connection weights, based on firing patterns.
-
-
-

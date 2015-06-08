@@ -79,16 +79,14 @@
 		};
 
         //decay function for neurons
-		Neuron.prototype.decay = function() {
-			this.acc = 0.9 * this.acc;
-			if(this.acc < 0)
-				this.acc = 0; 
-		};
+		
 
 		//accumulation function when recieving a signal
 		Neuron.prototype.build = function() {
-			this.acc += network_settings.signal_weight; // each signal adds 1/6.
-
+			this.acc = this.prevReleaseAxon.weight * (this.acc + network_settings.signal_weight);
+			if(this.acc > 1)
+			this.acc = 1; // each signal adds 1/6 * axon weight.
+			//console.log(this.acc);
 		};
 
 		//neuron firing function with probability of firing equal to the energy level
@@ -188,6 +186,7 @@
 					this.axon.neuronB.receivedSignal = true;
 					this.axon.neuronB.signalCount++;
 					this.axon.neuronB.prevReleaseAxon = this.axon;
+					this.axon.neuronB.build();
 				}
 
 			} else if (this.startingPoint === 'B') {
@@ -198,6 +197,7 @@
 					this.axon.neuronA.receivedSignal = true;
 					this.axon.neuronA.signalCount++;
 					this.axon.neuronA.prevReleaseAxon = this.axon;
+					this.axon.neuronA.build();
 				}
 			}
 
@@ -314,6 +314,8 @@
 	// Axon ------------------------------------------------------------------
 
 		function Axon(neuronA, neuronB) {
+
+			this.weight = 1;
 
 			this.bezierSubdivision = 8;
 			this.neuronA = neuronA;
@@ -469,6 +471,19 @@
 
 		};
 
+		NeuralNetwork.prototype.decayFunction = function() {
+			setTimeout(function(){
+				for(var i = 0; i<this.allNeurons.length; i++){
+					var n = this.allNeurons[i];
+						console.log(n.acc);
+					n.acc = 0.9 * n.acc;
+						if(n.acc < 0)
+						n.acc = 0;
+					console.log("after"+ this.acc);}
+				}, 10000); 
+
+		};
+
 		NeuralNetwork.prototype.initNeuralNetwork = function () {
 
 			// obj loader
@@ -499,6 +514,7 @@
 				console.log('Neural Network initialized');
 				document.getElementById('loading').style.display = 'none';	// hide loading animation when finish loading model
 				self.regenerationFunction();
+				self.decayFunction();
 
 			}); // end of loader
 
@@ -616,12 +632,12 @@
 							this.releaseSignalAt(n);
 						}
 					}
-					else{
-						n.build();
-					}
+					// else if(n.receivedSignal){
+					// 	n.build();
+					// }
 
 				}
-				n.decay();
+				//n.decay();
 				//console.log(n.acc);
 
 				n.receivedSignal = false;	// if neuron received signal but still in delay reset it
