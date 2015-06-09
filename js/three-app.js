@@ -464,6 +464,7 @@
 			}, astrocyte_settings.frequency);
 			 
 			}
+			//console.log("regeneration");
 			regeneration();
 
 		};
@@ -473,18 +474,21 @@
 
 			var decay = function(){
 				setTimeout(function(){
-				for(var i = 0; i<that.allNeurons.length; i++){
-					var n = that.allNeurons[i];
-						console.log(n.acc);
-					n.acc = 0.9 * n.acc;
-						if(n.acc < 0)
-						n.acc = 0;
-					console.log("after"+ n.acc);}
-				}, network_settings.decayTime); 
+					for(var i = 0; i<that.allNeurons.length; i++){
+						var n = that.allNeurons[i];
+						//console.log(n.acc);
+						n.acc = 0.9 * n.acc;
+							if(n.acc < 0)
+							n.acc = 0;
+						//console.log("after"+ n.acc);
+					}
+					//console.log("finish loop");
+					decay();
+				}, network_settings.decayTime);
+				//console.log("after loop");
+				};
 
-			}
-
-			console.log("again");
+			//console.log("again");
 			decay();
 
 		};
