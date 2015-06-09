@@ -33,6 +33,7 @@ Energy regeneration function settings:
 When neuron is ready to fire it fires with a probability equal to its energy level at that time.
 - Firing Threshold - when the energy level of the neuron reaches this threshold the neuron fires.
 - Signal Weight - the amount of energy that is added to a neuron when it recieves a signal.
+- Decay Time in ms - the amount of time it takes neurons to decay.
 
 
 ###Visual Settings

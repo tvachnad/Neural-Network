@@ -19,7 +19,7 @@
 			this.prevReleaseAxon = null;
 
 			//neuron fires when this number passes the firing threshold
-			this.acc = 0;
+			this.acc = 0.5;
 
 			THREE.Vector3.call(this, x, y, z);
 		}
@@ -77,9 +77,6 @@
 			return null;
 
 		};
-
-        //decay function for neurons
-		
 
 		//accumulation function when recieving a signal
 		Neuron.prototype.build = function() {
@@ -472,15 +469,23 @@
 		};
 
 		NeuralNetwork.prototype.decayFunction = function() {
-			setTimeout(function(){
-				for(var i = 0; i<this.allNeurons.length; i++){
-					var n = this.allNeurons[i];
+			var that = this;
+
+			var decay = function(){
+				setTimeout(function(){
+				for(var i = 0; i<that.allNeurons.length; i++){
+					var n = that.allNeurons[i];
 						console.log(n.acc);
 					n.acc = 0.9 * n.acc;
 						if(n.acc < 0)
 						n.acc = 0;
-					console.log("after"+ this.acc);}
-				}, 10000); 
+					console.log("after"+ n.acc);}
+				}, network_settings.decayTime); 
+
+			}
+
+			console.log("again");
+			decay();
 
 		};
 
@@ -818,6 +823,7 @@
 			signal_weight: 0.167, // energy of neuron increases by this amount per signal.
            AxonDistance: 8, //default
            NeuronConnection: 6, //default
+           decayTime: 5000, //time needed for neurons to decay
 
            reload: function(){
            	window.neuralNet = new NeuralNetwork();
@@ -870,6 +876,7 @@
 		var gui_settings = gui.addFolder('Activation Function Settings');
 		gui_settings.add(network_settings, 'firing_threshold', 0, 1).name("Firing Threshold");
 		gui_settings.add(network_settings, 'signal_weight', 0, 1).name("Signal Weight");
+		gui_settings.add(network_settings, 'decayTime', 0, 100000).name("Decay Time in ms");
 
 		var gui_settings = gui.addFolder('Visual Settings');
 		gui_settings.add(neuralNet.particlePool, 'pSize', 0.2, 2).name('Signal Size');

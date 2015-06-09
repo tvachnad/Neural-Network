@@ -1,7 +1,7 @@
 # Network Modifications
 
 **Activation Function**
-- integrate activation function in neurons.
+- modify activation function in neurons.
 
 
 **Astrocyte Energy Regeneration**
@@ -15,14 +15,14 @@
 
 **Threshold**
 
-- each neuron has to receive a certain # of signals to fire = 3
-- doesn’t mean exactly 3 signals were received, just that build up of signals/energy sums to 3
-- non-negative value that stores # of signals received
-  - subtracts 0.1 from # every iteration (decays at a constant rate)
-    - adds 1 if a signal is received (enough to outweigh decay)
-      - when it hits a total it will fire
+- each neuron has to receive a certain # of signals to fire.
+- build-up of signals has to equal firing threshold.
+- non-negative value that stores # of signals received = acc.
+  - multiplies 0.9 with acc (decays at a constant rate)
+    - adds 1/6 if a signal is received (enough to outweigh decay)
+      - when it hits the firing threshold it will fire
 
-- refractory period = 2 time steps	
+- refractory period = 5 seconds (default), can be modified.	
 
 ```
 m ← max(m + signals(now) - 0.1, 0) // decay cannot make value less than 0
@@ -34,7 +34,7 @@ if m >= 3 && enough time has passed // refractory period
 
 - should result in less signals
 - calculate average signals received per neuron
-  - playing with threshold & refractory period
+  - threshold & refractory period can be modified in real time.
 
 **Weights**
 
@@ -44,13 +44,12 @@ if m >= 3 && enough time has passed // refractory period
     - what happens to max distance allowed for connection?
   - graphical interface allowing to specify the distribution.
   - make connectivity look like human brain connectivity matrices.
-  - primary sensory inputs, motor (decision) outputs.  
+  - primary sensory inputs, motor (decision) outputs.
+  - one directional connection.   
 
-- add weight to Connection object (axon)
+- randomly assign weights to connections.
   - modify above to
     - mi ← max(mi + SUM0,connections.length(wi*signalsi(now)) - 0.1, 0)
-
-    - create another array in neuron object to keep track of incoming signal connections ?
 	
 - initialization
   - eventually: interaction of weight and distance between neurons
