@@ -565,6 +565,9 @@
 					{
 						var connectedAxon = n1.connectNeuronTo(n2);
 						this.constructAxonArrayBuffer(connectedAxon);
+						var rand = (Math.random()*41+80)/100;
+						connectedAxon.weight = rand * (1/connectedAxon.cpLength);
+						console.log("distance = "+connectedAxon.cpLength+" weight = "+connectedAxon.weight);
 					}
 				}
 			}
@@ -646,8 +649,6 @@
 					// }
 
 				}
-				//n.decay();
-				//console.log(n.acc);
 
 				n.receivedSignal = false;	// if neuron received signal but still in delay reset it
 				//TODO
