@@ -1,9 +1,16 @@
 
 (function main() { "use strict";
 
+	// Constants -------------------------------------------------------------
+
+		const EXCITOR = 0;
+		const INHIBITOR = 1;
+
 	// Neuron ----------------------------------------------------------------
 
 		function Neuron(x, y, z) {
+
+			this.type = null;
 
 			this.connection = [];
 			// represents the 1:1 ratio astrocyte associated w/ neuron
@@ -405,13 +412,25 @@
 			// neuron
 			this.neuronSize = 0.7;
 			this.spriteTextureNeuron = THREE.ImageUtils.loadTexture( "sprites/electric.png" );
-			this.neuronColor = 0x00ffff;
+			this.excitorColor = 0x00ffff;
+			this.inhibitorColor = 0xff0037;
 			this.neuronOpacity = 1.0;
-			this.neuronsGeom = new THREE.Geometry();
-			this.neuronMaterial = new THREE.PointCloudMaterial({
+			this.excitorsGeom = new THREE.Geometry();
+			this.inhibitorsGeom = new THREE.Geometry();
+			this.excitorMaterial = new THREE.PointCloudMaterial({
 				map: this.spriteTextureNeuron,
 				size: this.neuronSize,
-				color: this.neuronColor,
+				color: this.excitorColor,
+				blending: THREE.AdditiveBlending,
+				depthTest: false,
+				transparent: true,
+				opacity: this.neuronOpacity
+			});
+
+			this.inhibitorMaterial = new THREE.PointCloudMaterial({
+				map: this.spriteTextureNeuron,
+				size: this.neuronSize,
+				color: this.inhibitorColor,
 				blending: THREE.AdditiveBlending,
 				depthTest: false,
 				transparent: true,
@@ -532,22 +551,35 @@
 		NeuralNetwork.prototype.initNeurons = function (inputVertices) {
 			console.log("init Neurons");
 
+			var numInhibitors = 0;
 			for (var i=0; i<inputVertices.length; i+=this.verticesSkipStep) {
 				var pos = inputVertices[i];
 				var n = new Neuron(pos.x, pos.y, pos.z);
+				n.type = EXCITOR;
 				n.astrocyte = new Astrocyte();
 				// half of all the astrocytes should be live
-				if(i%2==0) {
-					n.astrocyte.active=true;
+				//console.log("adfasdvknvjanlkdsjnfjvhslkvdbchjksbdn");
+				if(i % 4 == 0) {
+					n.astrocyte.active = true;
 				}
+				if(i % 10 == 0){
+					n.type = INHIBITOR;
+					numInhibitors++;
+				}
+				console.log("# of inhibitors" +numInhibitors);
 				n.astrocyte.resetEnergy(); // modify this, should be a rand int between max and min
 				this.allNeurons.push(n);
-				this.neuronsGeom.vertices.push(n);
+				if(n.type == EXCITOR)
+					this.excitorsGeom.vertices.push(n);
+				else if(n.type == INHIBITOR)
+					this.inhibitorsGeom.vertices.push(n);
 			}
 
 			// neuron mesh
-			this.neuronParticles = new THREE.PointCloud(this.neuronsGeom, this.neuronMaterial);
-			scene.add(this.neuronParticles);
+			this.excitorParticles = new THREE.PointCloud(this.excitorsGeom, this.excitorMaterial);
+			scene.add(this.excitorParticles);
+			this.inhibitorParticles = new THREE.PointCloud(this.inhibitorsGeom, this.inhibitorMaterial);
+			scene.add(this.inhibitorParticles);
 
 		};
 
@@ -567,7 +599,7 @@
 						this.constructAxonArrayBuffer(connectedAxon);
 						var rand = (Math.random()*41+80)/100;
 						connectedAxon.weight = rand * (1/connectedAxon.cpLength);
-						console.log("distance = "+connectedAxon.cpLength+" weight = "+connectedAxon.weight);
+						//console.log("distance = "+connectedAxon.cpLength+" weight = "+connectedAxon.weight);
 					}
 				}
 			}
@@ -764,9 +796,11 @@
 
 		NeuralNetwork.prototype.updateSettings = function () {
 
-			this.neuronMaterial.opacity = this.neuronOpacity;
-			this.neuronMaterial.color.setHex(this.neuronColor);
-			this.neuronMaterial.size = this.neuronSize;
+			this.excitorMaterial.opacity = this.neuronOpacity;
+			this.excitorMaterial.color.setHex(this.excitorColor);
+			this.excitorMaterial.size = this.neuronSize;
+
+			this.inhibitorMaterial.color.setHex(this.inhibitorColor);
 			
 
 			this.shaderUniforms.color.value.set(this.axonColor);
@@ -889,7 +923,8 @@
 		gui_settings.add(neuralNet, 'neuronOpacity', 0, 1.0).name('Neuron Opacity');
 		gui_settings.add(neuralNet, 'axonOpacityMultiplier', 0.0, 5.0).name('Axon Opacity Mult');
 		gui_settings.addColor(neuralNet.particlePool, 'pColor').name('Signal Color');
-		gui_settings.addColor(neuralNet, 'neuronColor').name('Neuron Color');
+		gui_settings.addColor(neuralNet, 'excitorColor').name('Excitor Color');
+		gui_settings.addColor(neuralNet, 'inhibitorColor').name('Inhibitor Color');
 		gui_settings.addColor(neuralNet, 'axonColor').name('Axon Color');
 		gui_settings.addColor(scene_settings, 'bgColor').name('Background');
 

@@ -9,6 +9,8 @@ Neural-Glial Network
 
 ###Network Settings
 
+neurons are either excitory or inhibitory, and they show up as different colors.
+
 - Max Signals - the maximum number of signals allowed to exist at once.
 - Signal Min Speed/Max Speed - the speed of the signal.
 - Max Axon Distance - the farthest allowed connection a neuron can have.
@@ -43,6 +45,7 @@ Changing any of the following attributes will have no affect on network function
 - Neuron Opacity
 - Axon Opacity Mult
 - Signal Color
-- Neuron Color
+- Excitor Color
+- Inhibitor Color
 - Axon Color
 - Background
