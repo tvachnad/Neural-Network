@@ -86,10 +86,16 @@
 		};
 
 		//accumulation function when recieving a signal
-		Neuron.prototype.build = function() {
-			this.acc = this.prevReleaseAxon.weight * (this.acc + network_settings.signal_weight);
+		Neuron.prototype.buildExcitor = function() {
+			this.acc = this.acc + (this.prevReleaseAxon.weight * network_settings.signal_weight);
 			if(this.acc > 1)
 			this.acc = 1; // each signal adds 1/6 * axon weight.
+			//console.log(this.acc);
+		};
+		Neuron.prototype.buildInhibitor = function() {
+			this.acc = this.acc - (this.prevReleaseAxon.weight * network_settings.signal_weight);
+			if(this.acc < 1)
+			this.acc = 0; // each signal adds 1/6 * axon weight.
 			//console.log(this.acc);
 		};
 
@@ -190,7 +196,14 @@
 					this.axon.neuronB.receivedSignal = true;
 					this.axon.neuronB.signalCount++;
 					this.axon.neuronB.prevReleaseAxon = this.axon;
-					this.axon.neuronB.build();
+					if(this.axon.neuronA.type == EXCITOR)
+						this.axon.neuronB.buildExcitor();
+					else if(this.axon.neuronA.type == INHIBITOR){
+						console.log("firer = "+this.axon.neuronA.type+" reciever = "+this.axon.neuronB.type);
+						console.log("energy before = "+this.axon.neuronB.acc);
+						this.axon.neuronB.buildInhibitor();
+						console.log("energy after = "+this.axon.neuronB.acc);
+					}
 				}
 
 			} else if (this.startingPoint === 'B') {
@@ -201,7 +214,10 @@
 					this.axon.neuronA.receivedSignal = true;
 					this.axon.neuronA.signalCount++;
 					this.axon.neuronA.prevReleaseAxon = this.axon;
-					this.axon.neuronA.build();
+					if(this.axon.neuronB.type == EXCITOR)
+						this.axon.neuronA.buildExcitor();
+					else if(this.axon.neuronB.type == INHIBITOR)
+						this.axon.neuronA.buildInhibitor();
 				}
 			}
 
@@ -347,7 +363,7 @@
 			var northPole = new THREE.Vector3(0, 0, 1);	// this is original axis where point get sampled
 			var axis = new THREE.Vector3().crossVectors(northPole, dirVec).normalize();	// get axis of rotation from original axis to dirVec
 			var axisTheta = dirVec.angleTo(northPole);	// get angle
-			var rotMat = new THREE.Matrix4().makeRotationAxis(axis, axisTheta);	// build rotation matrix
+			var rotMat = new THREE.Matrix4().makeRotationAxis(axis, axisTheta);	// buildExcitor rotation matrix
 
 			var minz = Math.cos( THREE.Math.degToRad(45) );	// cone spread in degrees
 			var z = THREE.Math.randFloat(minz, 1);
@@ -677,7 +693,7 @@
 						}
 					}
 					// else if(n.receivedSignal){
-					// 	n.build();
+					// 	n.buildExcitor();
 					// }
 
 				}
