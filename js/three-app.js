@@ -170,6 +170,7 @@
 			this.startingPoint = null;
 			this.axon = null;
 			this.particle = particlePool.getParticle();
+			this.excitor = true;
 			THREE.Vector3.call(this);
 
 		}
@@ -188,7 +189,10 @@
 		Signal.prototype.travel = function () {
 
 			var pos;
-			if (this.startingPoint === 'A') {
+			var temp = this.axon.getPoint(this.t);
+			// console.log("direction of axon = "+this.axon.direction + "starting point = "+this.startingPoint);
+			// if (this.startingPoint === 'A' && (this.axon.direction === 0 || this.axon.direction === 2)) {
+				if (this.startingPoint === 'A'){
 				this.t += this.speed;
 				if (this.t>=1) {
 					this.t = 1;
@@ -199,14 +203,16 @@
 					if(this.axon.neuronA.type == EXCITOR)
 						this.axon.neuronB.buildExcitor();
 					else if(this.axon.neuronA.type == INHIBITOR){
-						console.log("firer = "+this.axon.neuronA.type+" reciever = "+this.axon.neuronB.type);
-						console.log("energy before = "+this.axon.neuronB.acc);
+						//console.log("firer = "+this.axon.neuronA.type+" reciever = "+this.axon.neuronB.type);
+						//console.log("energy before = "+this.axon.neuronB.acc);
 						this.axon.neuronB.buildInhibitor();
-						console.log("energy after = "+this.axon.neuronB.acc);
+						//console.log("energy after = "+this.axon.neuronB.acc);
 					}
 				}
+				//console.log("fired signal = "+this.startingPoint);
 
-			} else if (this.startingPoint === 'B') {
+			} //else if (this.startingPoint === 'B' && (this.axon.direction === 1 || this.axon.direction === 2)) {
+				else if (this.startingPoint === 'B'){
 				this.t -= this.speed;
 				if (this.t<=0) {
 					this.t = 0;
@@ -219,12 +225,17 @@
 					else if(this.axon.neuronB.type == INHIBITOR)
 						this.axon.neuronA.buildInhibitor();
 				}
+				//console.log("fired signal = "+this.startingPoint);
 			}
 
 			pos = this.axon.getPoint(this.t);
+			this.particle.set(pos.x, pos.y, pos.z);
+			// if (pos === temp)
+			// 	this.alive = false;
+
+
 			// pos = this.axon.getPointAt(this.t);	// uniform point distribution but slower calculation
 
-			this.particle.set(pos.x, pos.y, pos.z);
 
 		};
 
@@ -337,6 +348,13 @@
 
 			this.weight = 1;
 
+			/*
+			0 = one directional starting from A,
+			1 = one directional starting from B,
+			2 = bi-directional.
+			*/
+			this.direction = null;
+
 			this.bezierSubdivision = 8;
 			this.neuronA = neuronA;
 			this.neuronB = neuronB;
@@ -381,6 +399,8 @@
 		function Connection(axon, startingPoint) {
 			this.axon = axon;
 			this.startingPoint = startingPoint;
+			
+
 		}
 
 	// Neural Network --------------------------------------------------------
@@ -615,6 +635,14 @@
 						this.constructAxonArrayBuffer(connectedAxon);
 						var rand = (Math.random()*41+80)/100;
 						connectedAxon.weight = rand * (1/connectedAxon.cpLength);
+						var dir = Math.floor(Math.random() * (100));
+						if(dir <=15)
+							connectedAxon.direction = 0;
+						else if (dir >= 15 && dir <= 30)
+							connectedAxon.direction = 1;
+						else
+							connectedAxon.direction = 2;
+						//console.log("direction = "+connectedAxon.direction);
 						//console.log("distance = "+connectedAxon.cpLength+" weight = "+connectedAxon.weight);
 					}
 				}

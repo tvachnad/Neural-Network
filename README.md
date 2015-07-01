@@ -11,6 +11,35 @@ Neural-Glial Network
 
 neurons are either excitory or inhibitory, and they show up as different colors.
 
+excitor build function:
+
+``` 
+this.acc = this.acc + (this.prevReleaseAxon.weight * network_settings.signal_weight);
+```
+inhibitor build function:
+
+``` 
+this.acc = this.acc - (this.prevReleaseAxon.weight * network_settings.signal_weight);
+```
+
+firing function:
+
+``` 
+var rand = Math.random();
+			if(rand < this.acc){
+				this.fired = true;
+				this.acc = this.acc - 0.125; // resets energy of neuron
+				// decrease energy level of astrocyte responsible for 
+				// giving the neuron the energy it needed to fire
+				this.releaseDelay = THREE.Math.randInt(100, 1000);
+				return true;
+			}
+			else{
+				return false; // didn't fire
+			}
+``` 
+
+
 - Max Signals - the maximum number of signals allowed to exist at once.
 - Signal Min Speed/Max Speed - the speed of the signal.
 - Max Axon Distance - the farthest allowed connection a neuron can have.
