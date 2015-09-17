@@ -35,6 +35,7 @@
 
 	Neuron.prototype = Object.create(THREE.Vector3.prototype);
 
+	//One directional connection from the neuron calling the method to the neuron in the parameter.
 	Neuron.prototype.connectNeuronOneDirection = function(neuronB) {
 
 		var neuronA = this;
@@ -46,6 +47,9 @@
 		return axon;
 
 	};
+
+	//Two directional connection from the neuron calling the method to the neuron in the parameter.
+	//A signal can travel both ways
 	Neuron.prototype.connectNeuronTwoDirection = function(neuronB) {
 
 		var neuronA = this;
@@ -77,6 +81,7 @@
 		return signals;
 
 	};
+
 	//returns active astrocyte, it's taking energy from
 	Neuron.prototype.canFire = function() {
 		if (this.acc >= network_settings.firing_threshold) {
@@ -99,13 +104,15 @@
 
 	};
 
-	//accumulation function when recieving a signal
+	//accumulation function when recieving a signal from an excitory neuron
 	Neuron.prototype.buildExcitor = function() {
 		this.acc = this.acc + (this.prevReleaseAxon.weight * network_settings.signal_weight);
 		if (this.acc > 1)
 			this.acc = 1; // each signal adds 1/6 * axon weight.
 		//console.log(this.acc);
 	};
+
+	//accumulation function when recieving a signal from an inhibitory neuron
 	Neuron.prototype.buildInhibitor = function() {
 		this.acc = this.acc - (this.prevReleaseAxon.weight * network_settings.signal_weight);
 		if (this.acc < 1)
@@ -149,6 +156,7 @@
 
 	};
 
+	//depletes energy from the astrocyte when the neuron fires
 	Astrocyte.prototype.deplete = function() {
 		this.availableEnergy -= 0.125; //energy needed to fire a signal default: 1/8
 		if (this.availableEnergy <= astrocyte_settings.maxEnergy) { // if energy not full, then regenerate more
@@ -158,6 +166,7 @@
 		}
 	};
 
+	//regenerates energy of the astrocyte in a certain time period that can be set in the settings
 	Astrocyte.prototype.replenish = function() {
 		//console.log("pre replenish");
 		var that = this;
@@ -213,6 +222,7 @@
 				this.axon.neuronB.receivedSignal = true;
 				this.axon.neuronB.signalCount++;
 				this.axon.neuronB.prevReleaseAxon = this.axon;
+				//checks what type of neuron sent the signal to call the correct build function
 				if (this.axon.neuronA.type == EXCITOR)
 					this.axon.neuronB.buildExcitor();
 				else if (this.axon.neuronA.type == INHIBITOR) {
@@ -361,13 +371,6 @@
 
 		this.weight = 1;
 
-		/*
-		0 = one directional starting from A,
-		1 = one directional starting from B,
-		2 = bi-directional.
-		*/
-		this.direction = null;
-
 		this.bezierSubdivision = 8;
 		this.neuronA = neuronA;
 		this.neuronB = neuronB;
@@ -509,6 +512,8 @@
 
 	}
 
+	//function for astrocyte energy regeneration
+	//TODO: somewhat messy needs tiding up
 	NeuralNetwork.prototype.regenerationFunction = function() {
 		var increasing;
 		if (astrocyte_settings.replenishEnergy >= astrocyte_settings.minThreshold)
@@ -546,6 +551,7 @@
 
 	};
 
+	//takes away potential firing energy of a neuron if it hasn't recieved any signals for some time
 	NeuralNetwork.prototype.decayFunction = function() {
 		var that = this;
 
@@ -619,8 +625,10 @@
 			// half of all the astrocytes should be live
 			//console.log("adfasdvknvjanlkdsjnfjvhslkvdbchjksbdn");
 			if (i % 4 == 0) {
-				n.astrocyte.active = true;
+				n.astrocyte.active = true; //currently not used
 			}
+			//every 5th neuron is inhibitory
+			//%10 because only 1/2 of the neurons are initialized
 			if (i % 10 == 0) {
 				n.type = INHIBITOR;
 				//n.maxConnectionPerNeuron = network_settings.NeuronConnectionInhibitor;
@@ -657,6 +665,7 @@
 					{
 						var rand = Math.floor( Math.random() * 3 );
 
+						//one directional connection starting from n1
 						if(rand === 0){
 						var connectedAxon = n1.connectNeuronTwoDirection(n2);
 						this.constructAxonArrayBuffer(connectedAxon);
@@ -664,13 +673,15 @@
 						connectedAxon.weight = rand * (1/connectedAxon.cpLength);
 					}
 
+					//one directional connection starting from n2
 					else if(rand === 1){
-						var connectedAxon = n1.connectNeuronOneDirection(n2);
+						var connectedAxon = n2.connectNeuronOneDirection(n1);
 						this.constructAxonArrayBuffer(connectedAxon);
 						var rand = (Math.random()*41+80)/100;
 						connectedAxon.weight = rand * (1/connectedAxon.cpLength);
 					}
 
+					//two directional connection
 					else if(rand === 2){
 						var connectedAxon = n1.connectNeuronOneDirection(n2);
 						this.constructAxonArrayBuffer(connectedAxon);
