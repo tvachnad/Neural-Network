@@ -27,8 +27,15 @@
 		this.firedCount = 0;
 		this.prevReleaseAxon = null;
 
+		this.xPos = x;
+		this.yPos = y;
+		this.zPos = z;
+
 		//neuron fires when this number passes the firing threshold
 		this.acc = 0.5;
+
+		this.region = null; // which region the neuron belongs to
+		// 1 - 188, assigned during initialization
 
 		THREE.Vector3.call(this, x, y, z);
 	}
@@ -43,7 +50,6 @@
 		var axon = new Axon(neuronA, neuronB);
 		neuronA.connection.push(new Connection(axon, 'A'));
 		neuronA.neurons.push(neuronB);
-		console.log("one "+counter1++);
 		return axon;
 
 	};
@@ -59,7 +65,6 @@
 		neuronB.connection.push(new Connection(axon, 'B'));
 		neuronA.neurons.push(neuronB);
 		neuronB.neurons.push(neuronA);
-		console.log("two "+counter2++);
 		return axon;
 
 	};
@@ -168,15 +173,10 @@
 
 	//regenerates energy of the astrocyte in a certain time period that can be set in the settings
 	Astrocyte.prototype.replenish = function() {
-		//console.log("pre replenish");
 		var that = this;
-		//keeps regenerating energy
 		setInterval(function() {
-			//console.log("replenish");
 			that.resetEnergy();
 		}, astrocyte_settings.regenerationTime);
-		//clearTimeout(i);
-		// console.log("reset: "+ this.availableEnergy);
 	};
 
 
@@ -426,7 +426,7 @@
 		this.initialized = false;
 
 		// settings
-		this.verticesSkipStep = 2; //2
+		this.verticesSkipStep = 1; //2
 		this.maxAxonDist = network_settings.AxonDistance; //default 8
 		//this.maxAxonDist = network_settings.AxonDistanceInhibitor; //default 4
 		this.maxConnectionPerNeuron = network_settings.NeuronConnection; //default 6
@@ -612,24 +612,37 @@
 
 	};
 
+	NeuralNetwork.prototype.printRegions = function(){
+		for(var i = 0; i<this.allNeurons.length; i++){
+			var n = this.allNeurons[i];
+			console.log("neuron # "+i+" region: "+n.region+"position: "+n.xPos+" "+n.yPos+" "+n.zPos);
+		}
+	};
+
 	NeuralNetwork.prototype.initNeurons = function(inputVertices) {
 		console.log("init Neurons");
 
 		var numInhibitors = 0;
 		for (var i = 0; i < inputVertices.length; i += this.verticesSkipStep) {
+			for(var q = 0; q<40; q++){
 			var pos = inputVertices[i];
-			var n = new Neuron(pos.x, pos.y, pos.z);
+			var rand1 = (Math.random()*16)-8;
+			var rand2 = (Math.random()*16)-8;
+			var rand3 = (Math.random()*16)-8;
+			console.log(rand3);
+			var n = new Neuron(pos.x+rand1, pos.y+rand2, pos.z+rand3);
 			n.type = EXCITOR;
 			//n.maxConnectionPerNeuron = network_settings.NeuronConnectionExcitor;
+			n.region = i;
+
 			n.astrocyte = new Astrocyte();
 			// half of all the astrocytes should be live
 			//console.log("adfasdvknvjanlkdsjnfjvhslkvdbchjksbdn");
-			if (i % 4 == 0) {
+			if (q % 4 == 0) {
 				n.astrocyte.active = true; //currently not used
 			}
 			//every 5th neuron is inhibitory
-			//%10 because only 1/2 of the neurons are initialized
-			if (i % 10 == 0) {
+			if (q % (5*this.verticesSkipStep) == 0) {
 				n.type = INHIBITOR;
 				//n.maxConnectionPerNeuron = network_settings.NeuronConnectionInhibitor;
 				numInhibitors++;
@@ -642,12 +655,15 @@
 			else if (n.type == INHIBITOR)
 				this.inhibitorsGeom.vertices.push(n);
 		}
+		}
 
 		// neuron mesh
 		this.excitorParticles = new THREE.PointCloud(this.excitorsGeom, this.excitorMaterial);
 		scene.add(this.excitorParticles);
 		this.inhibitorParticles = new THREE.PointCloud(this.inhibitorsGeom, this.inhibitorMaterial);
 		scene.add(this.inhibitorParticles);
+
+		this.printRegions();
 
 	};
 
