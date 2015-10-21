@@ -1,7 +1,7 @@
 Neural-Glial Network
 ==============
 
-[Demo](http://http://tvachnad.github.io/Neural-Network/)
+[Demo](http://tvachnad.github.io/Neural-Network/)
 
 [Paper](http://edlab-www.cs.umass.edu/~tvachnad/FinalProjectWrite-Up.pdf)
 
