@@ -82,16 +82,16 @@
         probFromMatrix = Number(probFromMatrix);
         probFromMatrix = probFromMatrix / 10000;
 
-        if(randomForMatrix < probFromMatrix){
+        if(randomForMatrix < probFromMatrix || r1 === r2){
         	canConnect = true;
         }
 
-		else if (n1 !== n2 && n1.distanceTo(n2) < network.maxAxonDist &&
-			n1.connection.length < network.maxConnectionPerNeuron &&
-			n2.connection.length < network.maxConnectionPerNeuron ){
+		// else if (n1 !== n2 && n1.distanceTo(n2) < network.maxAxonDist &&
+		// 	n1.connection.length < network.maxConnectionPerNeuron &&
+		// 	n2.connection.length < network.maxConnectionPerNeuron ){
 
-			canConnect = true;
-		}
+		// 	canConnect = true;
+		// }
 
 		if (canConnect)
 		{
