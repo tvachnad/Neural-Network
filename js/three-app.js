@@ -27,8 +27,15 @@
 		this.firedCount = 0;
 		this.prevReleaseAxon = null;
 
+		this.xPos = x;
+		this.yPos = y;
+		this.zPos = z;
+
 		//neuron fires when this number passes the firing threshold
 		this.acc = 0.5;
+
+		this.region = -1; // which region the neuron belongs to
+		// 1 - 188, assigned during initialization
 
 		THREE.Vector3.call(this, x, y, z);
 	}
@@ -43,7 +50,6 @@
 		var axon = new Axon(neuronA, neuronB);
 		neuronA.connection.push(new Connection(axon, 'A'));
 		neuronA.neurons.push(neuronB);
-		console.log("one "+counter1++);
 		return axon;
 
 	};
@@ -59,10 +65,64 @@
 		neuronB.connection.push(new Connection(axon, 'B'));
 		neuronA.neurons.push(neuronB);
 		neuronB.neurons.push(neuronA);
-		console.log("two "+counter2++);
 		return axon;
 
 	};
+
+	Neuron.prototype.tryConnect = function(neuronB, network){
+
+		var n1 = this;
+		var n2 = neuronB;
+		var r1 = parseInt(n1.region);
+		var r2 = parseInt(n2.region);
+		var randomForMatrix = (Math.random());
+		var canConnect = false;
+
+		var probFromMatrix = network.connectivityMatrix[r1-1][r2];
+        probFromMatrix = Number(probFromMatrix);
+        probFromMatrix = probFromMatrix / 10000;
+
+        if(randomForMatrix < probFromMatrix || r1 === r2){
+        	canConnect = true;
+        }
+
+		// else if (n1 !== n2 && n1.distanceTo(n2) < network.maxAxonDist &&
+		// 	n1.connection.length < network.maxConnectionPerNeuron &&
+		// 	n2.connection.length < network.maxConnectionPerNeuron ){
+
+		// 	canConnect = true;
+		// }
+
+		if (canConnect)
+		{
+			var rand = Math.floor( Math.random() * 3 );
+
+			//one directional connection starting from n1
+			if(rand === 0){
+			var connectedAxon = n1.connectNeuronTwoDirection(n2);
+			network.constructAxonArrayBuffer(connectedAxon);
+			var rand = (Math.random()*41+80)/100;
+			connectedAxon.weight = rand * (1/connectedAxon.cpLength);
+		}
+
+		 	//one directional connection starting from n2
+			else if(rand === 1){
+				var connectedAxon = n2.connectNeuronOneDirection(n1);
+				network.constructAxonArrayBuffer(connectedAxon);
+				var rand = (Math.random()*41+80)/100;
+				connectedAxon.weight = rand * (1/connectedAxon.cpLength);
+			}
+
+			//two directional connection
+			else if(rand === 2){
+				var connectedAxon = n1.connectNeuronOneDirection(n2);
+				network.constructAxonArrayBuffer(connectedAxon);
+				var rand = (Math.random()*41+80)/100;
+				connectedAxon.weight = rand * (1/connectedAxon.cpLength);
+			}
+
+		}
+	}
 
 	Neuron.prototype.createSignal = function(particlePool, minSpeed, maxSpeed) {
 
@@ -168,15 +228,10 @@
 
 	//regenerates energy of the astrocyte in a certain time period that can be set in the settings
 	Astrocyte.prototype.replenish = function() {
-		//console.log("pre replenish");
 		var that = this;
-		//keeps regenerating energy
 		setInterval(function() {
-			//console.log("replenish");
 			that.resetEnergy();
 		}, astrocyte_settings.regenerationTime);
-		//clearTimeout(i);
-		// console.log("reset: "+ this.availableEnergy);
 	};
 
 
@@ -426,7 +481,7 @@
 		this.initialized = false;
 
 		// settings
-		this.verticesSkipStep = 2; //2
+		this.verticesSkipStep = 1; //2
 		this.maxAxonDist = network_settings.AxonDistance; //default 8
 		//this.maxAxonDist = network_settings.AxonDistanceInhibitor; //default 4
 		this.maxConnectionPerNeuron = network_settings.NeuronConnection; //default 6
@@ -507,8 +562,12 @@
 		// probably shouldn't be hardcoded
 		this.numActiveAstrocytes = 7241;
 
+		//connectivity matrix between different regions
+		this.connectivityMatrix =[];
+
 		// initialize NN
 		this.initNeuralNetwork();
+
 
 	}
 
@@ -583,6 +642,16 @@
 		var loadedMesh, loadedMeshVertices;
 		var loader = new THREE.OBJLoader();
 
+		//load connectivity matrix
+		d3.csv("models/connectivity.csv", function(data) {
+
+  		for(var q = 0;q<188;q++){
+  			self.connectivityMatrix[q]=data[q];
+  		}
+  		// console.log(data);
+  		// console.log(self.connectivityMatrix);
+		});
+
 		loader.load('models/brain_vertex_low.obj', function constructNeuralNetwork(loadedObject) {
 
 			loadedMesh = loadedObject.children[0];
@@ -608,8 +677,15 @@
 			self.regenerationFunction();
 			self.decayFunction();
 
-		}); // end of loader
+		}); // end of loader1
 
+	};
+
+	NeuralNetwork.prototype.printRegions = function(){
+		for(var i = 0; i<this.allNeurons.length; i++){
+			var n = this.allNeurons[i];
+			console.log("neuron # "+i+" region: "+n.region+"position: "+n.xPos+" "+n.yPos+" "+n.zPos);
+		}
 	};
 
 	NeuralNetwork.prototype.initNeurons = function(inputVertices) {
@@ -617,19 +693,24 @@
 
 		var numInhibitors = 0;
 		for (var i = 0; i < inputVertices.length; i += this.verticesSkipStep) {
+			for(var q = 0; q<40; q++){
 			var pos = inputVertices[i];
-			var n = new Neuron(pos.x, pos.y, pos.z);
+			var rand1 = (Math.random()*18)-9;
+			var rand2 = (Math.random()*18)-9;
+			var rand3 = (Math.random()*18)-9;
+			var n = new Neuron(pos.x+rand1, pos.y+rand2, pos.z+rand3);
 			n.type = EXCITOR;
 			//n.maxConnectionPerNeuron = network_settings.NeuronConnectionExcitor;
+			n.region = i+1;
+
 			n.astrocyte = new Astrocyte();
 			// half of all the astrocytes should be live
 			//console.log("adfasdvknvjanlkdsjnfjvhslkvdbchjksbdn");
-			if (i % 4 == 0) {
+			if (q % 4 == 0) {
 				n.astrocyte.active = true; //currently not used
 			}
 			//every 5th neuron is inhibitory
-			//%10 because only 1/2 of the neurons are initialized
-			if (i % 10 == 0) {
+			if (q % (5*this.verticesSkipStep) == 0) {
 				n.type = INHIBITOR;
 				//n.maxConnectionPerNeuron = network_settings.NeuronConnectionInhibitor;
 				numInhibitors++;
@@ -642,12 +723,15 @@
 			else if (n.type == INHIBITOR)
 				this.inhibitorsGeom.vertices.push(n);
 		}
+		}
 
 		// neuron mesh
 		this.excitorParticles = new THREE.PointCloud(this.excitorsGeom, this.excitorMaterial);
 		scene.add(this.excitorParticles);
 		this.inhibitorParticles = new THREE.PointCloud(this.inhibitorsGeom, this.inhibitorMaterial);
 		scene.add(this.inhibitorParticles);
+
+		//this.printRegions();
 
 	};
 
@@ -659,37 +743,8 @@
 				for (var k=j+1; k<allNeuronsLength; k++) {
 					var n2 = this.allNeurons[k];
 					// connect neuron if distance ... and limit connection per neuron to not more than x
-					if (n1 !== n2 && n1.distanceTo(n2) < this.maxAxonDist &&
-						n1.connection.length < this.maxConnectionPerNeuron &&
-						n2.connection.length < this.maxConnectionPerNeuron)
-					{
-						var rand = Math.floor( Math.random() * 3 );
-
-						//one directional connection starting from n1
-						if(rand === 0){
-						var connectedAxon = n1.connectNeuronTwoDirection(n2);
-						this.constructAxonArrayBuffer(connectedAxon);
-						var rand = (Math.random()*41+80)/100;
-						connectedAxon.weight = rand * (1/connectedAxon.cpLength);
-					}
-
-					//one directional connection starting from n2
-					else if(rand === 1){
-						var connectedAxon = n2.connectNeuronOneDirection(n1);
-						this.constructAxonArrayBuffer(connectedAxon);
-						var rand = (Math.random()*41+80)/100;
-						connectedAxon.weight = rand * (1/connectedAxon.cpLength);
-					}
-
-					//two directional connection
-					else if(rand === 2){
-						var connectedAxon = n1.connectNeuronOneDirection(n2);
-						this.constructAxonArrayBuffer(connectedAxon);
-						var rand = (Math.random()*41+80)/100;
-						connectedAxon.weight = rand * (1/connectedAxon.cpLength);
-					}
-
-					}
+					
+					n1.tryConnect(n2, this);
 				}
 			}
 
