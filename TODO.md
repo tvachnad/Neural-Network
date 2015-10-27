@@ -1,4 +1,4 @@
-# Network Modifications
+ # Network Modifications
 
 **Activation Function**
 - modify activation function in neurons.
@@ -6,7 +6,7 @@
 
 **Astrocyte Energy Regeneration**
 
-- accumulation rate
+- accumulation rate //test
   - Option to regenerate as wave function over time.
 - if it’s too high, they would never run out
 - if it’s too low, the signals would still die out
