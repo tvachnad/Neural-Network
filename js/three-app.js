@@ -78,16 +78,7 @@
 		var randomForMatrix = (Math.random());
 		var canConnect = false;
 
-<<<<<<< HEAD
-=======
-		if(r1<1 || r1>188){
-			console.log("r1 = "+r1);
-		}
-		if(r2<0 || r2>189){
-			console.log("r2 = "+r2);
-		}
 
->>>>>>> 289fab1c01142710515d220d9f42810426387efd
 		var probFromMatrix = network.connectivityMatrix[r1-1][r2];
         probFromMatrix = Number(probFromMatrix);
         probFromMatrix = probFromMatrix / 10000;
