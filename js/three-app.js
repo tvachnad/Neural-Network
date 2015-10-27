@@ -78,6 +78,13 @@
 		var randomForMatrix = (Math.random());
 		var canConnect = false;
 
+		if(r1<1 || r1>188){
+			console.log("r1 = "+r1);
+		}
+		if(r2<0 || r2>189){
+			console.log("r2 = "+r2);
+		}
+
 		var probFromMatrix = network.connectivityMatrix[r1-1][r2];
         probFromMatrix = Number(probFromMatrix);
         probFromMatrix = probFromMatrix / 10000;
@@ -650,7 +657,6 @@
   		}
   		// console.log(data);
   		// console.log(self.connectivityMatrix);
-		});
 
 		loader.load('models/brain_vertex_low.obj', function constructNeuralNetwork(loadedObject) {
 
@@ -678,6 +684,7 @@
 			self.decayFunction();
 
 		}); // end of loader1
+		});
 
 	};
 
