@@ -847,8 +847,7 @@
 					// connect neuron if distance ... and limit connection per neuron to not more than x
 					
 					n1.tryConnect(n2, this, j, k);
-				}
-				if(this.connections.length > 100){
+					if(this.connections.length > 1000){
 					$.ajax({
 					 	type: "POST",
 					 	url: "/connection",
@@ -878,6 +877,8 @@
 					this.connections = [];
 					this.connWeight = [];
 				}
+				}
+				
 			}
 			if(this.connections.length > 0){
 				$.ajax({
