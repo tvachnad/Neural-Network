@@ -869,12 +869,7 @@
 
 			if (!s.alive) {
 				s.particle.free();
-				for (var k = this.allSignals.length - 1; k >= 0; k--) {
-					if (s === this.allSignals[k]) {
-						this.allSignals.splice(k, 1);
-						break;
-					}
-				}
+				this.allSignals.splice(j, 1);
 			}
 
 		}
