@@ -101,26 +101,20 @@
 			//one directional connection starting from n1
 			if(rand === 0){
 			var connectedAxon = n1.connectNeuronTwoDirection(n2);
-			network.constructAxonArrayBuffer(connectedAxon);
-			var rand = (Math.random()*41+80)/100;
-			connectedAxon.weight = rand * (1/connectedAxon.cpLength);
-		}
+			}
 
 		 	//one directional connection starting from n2
 			else if(rand === 1){
 				var connectedAxon = n2.connectNeuronOneDirection(n1);
-				network.constructAxonArrayBuffer(connectedAxon);
-				var rand = (Math.random()*41+80)/100;
-				connectedAxon.weight = rand * (1/connectedAxon.cpLength);
 			}
 
 			//two directional connection
-			else if(rand === 2){
+			else {
 				var connectedAxon = n1.connectNeuronOneDirection(n2);
-				network.constructAxonArrayBuffer(connectedAxon);
-				var rand = (Math.random()*41+80)/100;
-				connectedAxon.weight = rand * (1/connectedAxon.cpLength);
 			}
+			network.constructAxonArrayBuffer(connectedAxon);
+			var rand = (Math.random()*41+80)/100;
+			connectedAxon.weight = rand * (1/connectedAxon.cpLength);
 
 		}
 	}
@@ -132,19 +126,20 @@
 
 		var signals = [];
 		// create signal to all connected axons
-		for (var i = 0; i < this.connection.length; i++) {
-			if (this.connection[i].axon !== this.prevReleaseAxon) {
-				var c = new Signal(particlePool, minSpeed, maxSpeed);
-				c.setConnection(this.connection[i]);
-				signals.push(c);
-			}
-		}
-		return signals;
-
+		return this.connection.filter(function(connection)
+			{
+				return connection.axon !== this.prevReleaseAxon;
+			}, this)
+			.map(connection, function()
+			{
+				return new Signal(connection, particlePool, minSpeed, maxSpeed);
+			})
 	};
 
+
 	//returns active astrocyte, it's taking energy from
-	Neuron.prototype.canFire = function() {
+	Neuron.prototype.canFire = function(neighbors) {
+		neighbors = typeof neighbors !== 'undefined' ? neighbors : true;
 		if (this.acc >= network_settings.firing_threshold) {
 			var total = this.neurons.length;
 			//console.log(" i"+this.neurons.length);
@@ -153,17 +148,19 @@
 			if (this.astrocyte.availableEnergy > astrocyte_settings.minEnergy) {
 				return this.astrocyte;
 			}
+
 			// if we get here, the directly linked astrocyte did not have enough energy
 			// check the astrocytes of surrounding neurons to see if they have enough energy
-			for (var i = 0; i < total; i++) {
-				if (this.neurons[i].astrocyte.availableEnergy > astrocyte_settings.minEnergy) {
-					return this.neurons[i].astrocyte;
+			if (neighbors) 
+				for (var i = 0; i < total; i++) {
+					if (astrocyte = this.neurons[i].canFire(False))
+						return astrocyte
 				}
-			}
 		}
 		return null;
 
 	};
+
 
 	//accumulation function when recieving a signal from an excitory neuron
 	Neuron.prototype.buildExcitor = function() {
@@ -238,7 +235,7 @@
 
 	// Signal ----------------------------------------------------------------
 
-	function Signal(particlePool, minSpeed, maxSpeed) {
+	function Signal(connection, particlePool, minSpeed, maxSpeed) {
 
 		this.minSpeed = minSpeed;
 		this.maxSpeed = maxSpeed;
@@ -250,6 +247,7 @@
 		this.particle = particlePool.getParticle();
 		this.excitor = true;
 		THREE.Vector3.call(this);
+		this.setConnection(connection);
 
 	}
 
