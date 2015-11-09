@@ -179,7 +179,7 @@
 	//accumulation function when recieving a signal from an inhibitory neuron
 	Neuron.prototype.buildInhibitor = function() {
 		this.acc = this.acc - (this.prevReleaseAxon.weight * network_settings.signal_weight);
-		if (this.acc < 1)
+		if (this.acc < 0)
 			this.acc = 0; // each signal adds 1/6 * axon weight.
 		//console.log(this.acc);
 	};
