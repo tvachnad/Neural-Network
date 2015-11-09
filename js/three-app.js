@@ -268,6 +268,24 @@
 
 	};
 
+	Signal.prototype.dispatchSignal = function(from, to)
+	{
+		this.alive = false;
+		to.receivedSignal = true;
+		to.signalCount++;
+		to.prevReleaseAxon = this.axon;
+		//checks what type of neuron sent the signal to call the correct build function
+		if (from.type == EXCITOR)
+			to.buildExcitor();
+		else if (from.type == INHIBITOR) {
+			//console.log("firer = "+this.axon.neuronA.type+" reciever = "+this.axon.neuronB.type);
+			//console.log("energy before = "+this.axon.neuronB.acc);
+			to.buildInhibitor();
+			//console.log("energy after = "+this.axon.neuronB.acc);
+		}
+
+	}
+
 	Signal.prototype.travel = function() {
 
 		var pos;
@@ -278,19 +296,7 @@
 			this.t += this.speed;
 			if (this.t >= 1) {
 				this.t = 1;
-				this.alive = false;
-				this.axon.neuronB.receivedSignal = true;
-				this.axon.neuronB.signalCount++;
-				this.axon.neuronB.prevReleaseAxon = this.axon;
-				//checks what type of neuron sent the signal to call the correct build function
-				if (this.axon.neuronA.type == EXCITOR)
-					this.axon.neuronB.buildExcitor();
-				else if (this.axon.neuronA.type == INHIBITOR) {
-					//console.log("firer = "+this.axon.neuronA.type+" reciever = "+this.axon.neuronB.type);
-					//console.log("energy before = "+this.axon.neuronB.acc);
-					this.axon.neuronB.buildInhibitor();
-					//console.log("energy after = "+this.axon.neuronB.acc);
-				}
+				this.dispatchSignal(this.axon.neuronA, this.axon.neuronB);
 			}
 			//console.log("fired signal = "+this.startingPoint);
 
@@ -299,14 +305,7 @@
 			this.t -= this.speed;
 			if (this.t <= 0) {
 				this.t = 0;
-				this.alive = false;
-				this.axon.neuronA.receivedSignal = true;
-				this.axon.neuronA.signalCount++;
-				this.axon.neuronA.prevReleaseAxon = this.axon;
-				if (this.axon.neuronB.type == EXCITOR)
-					this.axon.neuronA.buildExcitor();
-				else if (this.axon.neuronB.type == INHIBITOR)
-					this.axon.neuronA.buildInhibitor();
+				this.dispatchSignal(this.axon.neuronB, this.axon.neuronA);
 			}
 			//console.log("fired signal = "+this.startingPoint);
 		}
