@@ -69,6 +69,12 @@
 
 	};
 
+	Neuron.prototype.decay = function(){
+		this.acc = 0.9 * this.acc;
+		if (this.acc < 0)
+			this.acc = 0;
+	}
+
 	Neuron.prototype.tryConnect = function(neuronB, network){
 
 		var n1 = this;
@@ -615,21 +621,13 @@
 
 		var decay = function() {
 			setTimeout(function() {
-				for (var i = 0; i < that.allNeurons.length; i++) {
-					var n = that.allNeurons[i];
-					//console.log(n.acc);
-					n.acc = 0.9 * n.acc;
-					if (n.acc < 0)
-						n.acc = 0;
-					//console.log("after"+ n.acc);
-				}
-				//console.log("finish loop");
+				that.allNeurons.forEach(function(neuron){
+					neuron.decay();
+				})
 				decay();
 			}, network_settings.decayTime);
-			//console.log("after loop");
 		};
 
-		//console.log("again");
 		decay();
 
 	};
