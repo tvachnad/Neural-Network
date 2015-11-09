@@ -130,7 +130,6 @@
 		this.firedCount += 1;
 		this.receivedSignal = false;
 
-		var signals = [];
 		// create signal to all connected axons
 		return this.connection.filter(function(connection)
 			{
@@ -574,36 +573,24 @@
 	//function for astrocyte energy regeneration
 	//TODO: somewhat messy needs tiding up
 	NeuralNetwork.prototype.regenerationFunction = function() {
-		var increasing;
-		if (astrocyte_settings.replenishEnergy >= astrocyte_settings.minThreshold)
-			increasing = true;
-		else
-			increasing = false;
-		var increase = function() {
-			if (astrocyte_settings.replenishEnergy + astrocyte_settings.amplitude > astrocyte_settings.maxThreshold) {
-				increasing = false;
-				decrease();
-			} else
-				astrocyte_settings.replenishEnergy += astrocyte_settings.amplitude;
-		};
-		var decrease = function() {
-			if (astrocyte_settings.replenishEnergy - astrocyte_settings.amplitude < astrocyte_settings.minThreshold) {
-				increasing = true;
-				increase();
-			} else
-				astrocyte_settings.replenishEnergy -= astrocyte_settings.amplitude;
-		};
+		var sign = 1;
+		var move = function()
+		{
+			astrocyte_settings.replenishEnergy += sign*astrocyte_settings.amplitude;
+			if ((astrocyte_settings.replenishEnergy > astrocyte_settings.maxThreshold) || 
+				(astrocyte_settings.replenishEnergy < astrocyte_settings.minThreshold))
+			{
+				astrocyte_settings.replenishEnergy -= sign*astrocyte_settings.amplitude;
+				sign *= -1;
+				move();
+			}
+		}
 		var regeneration = function() {
-
 				setTimeout(function() {
-					if (increasing)
-						increase();
-					else
-						decrease();
+					move();
 					regeneration();
 					//console.log(astrocyte_settings.replenishEnergy);
 				}, astrocyte_settings.frequency);
-
 			}
 			//console.log("regeneration");
 		regeneration();
