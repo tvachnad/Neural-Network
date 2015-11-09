@@ -411,8 +411,7 @@
 	function Particle(particlePool) {
 
 		this.particlePool = particlePool;
-		this.available = true;
-		THREE.Vector3.call(this, particlePool.offScreenPos.x, particlePool.offScreenPos.y, particlePool.offScreenPos.z);
+		this.free();
 
 	}
 
@@ -603,7 +602,7 @@
 				setTimeout(function() {
 					if (increasing)
 						increase();
-					else if (!increasing)
+					else
 						decrease();
 					regeneration();
 					//console.log(astrocyte_settings.replenishEnergy);
