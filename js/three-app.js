@@ -289,7 +289,7 @@
 	Signal.prototype.travel = function() {
 
 		var pos;
-		var temp = this.axon.getPoint(this.t);
+		//var temp = this.axon.getPoint(this.t);
 		// console.log("direction of axon = "+this.axon.direction + "starting point = "+this.startingPoint);
 		// if (this.startingPoint === 'A' && (this.axon.direction === 0 || this.axon.direction === 2)) {
 		if (this.startingPoint === 'A') {
