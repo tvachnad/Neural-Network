@@ -738,6 +738,9 @@
 			transferToArrayBuffer(this.axonIndices, axonIndices);
 			transferToArrayBuffer(this.axonPositions, axonPositions);
 			transferToArrayBuffer(this.shaderAttributes.opacityAttr.value, axonOpacities);
+			this.axonIndices = [];
+			this.axonPositions = [];
+			this.axonOpacities = [];
 
 			function transferToArrayBuffer(fromArr, toArr) {
 				for (i=0; i<toArr.length; i++) {
@@ -1018,7 +1021,7 @@
 	//gui_settings.add(network_settings, 'NeuronConnectionInhibitor', 0, 20).name('Max Inhibitor Neuron Connections');
 	gui_settings.add(neuralNet, 'signalMinSpeed', 0.01, 0.1, 0.01).name('Signal Min Speed');
 	gui_settings.add(neuralNet, 'signalMaxSpeed', 0.01, 0.1, 0.01).name('Signal Max Speed');
-	gui_settings.add(network_settings, 'reload');
+	gui_settings.add(network_settings, 'reload'); 
 	gui_settings.open();
 
 	var gui_settings = gui.addFolder('Astrocyte Settings');
