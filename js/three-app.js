@@ -135,7 +135,7 @@
 			{
 				return connection.axon !== this.prevReleaseAxon;
 			}, this)
-			.map(connection, function()
+			.map(function(connection)
 			{
 				return new Signal(connection, particlePool, minSpeed, maxSpeed);
 			})
@@ -158,8 +158,9 @@
 			// check the astrocytes of surrounding neurons to see if they have enough energy
 			if (neighbors) 
 				for (var i = 0; i < total; i++) {
-					if (astrocyte = this.neurons[i].canFire(False))
-						return astrocyte
+					var astrocyte = this.neurons[i].canFire(false)
+					if (astrocyte)
+						return astrocyte;
 				}
 		}
 		return null;
@@ -172,12 +173,12 @@
 
 	//accumulation function when recieving a signal from an excitory neuron
 	Neuron.prototype.buildExcitor = function() {
-		this.acc = min(1, this.acc + this.effectiveSignal());
+		this.acc = Math.min(1, this.acc + this.effectiveSignal());
 	};
 
 	//accumulation function when recieving a signal from an inhibitory neuron
 	Neuron.prototype.buildInhibitor = function() {
-		this.acc = max(0, this.acc - this.effectiveSignal());
+		this.acc = Math.max(0, this.acc - this.effectiveSignal());
 	};
 
 	//neuron firing function with probability of firing equal to the energy level
