@@ -283,6 +283,11 @@
 
 	}
 
+	Signal.prototype.freeParticle = function(){
+		if (this.particle != null)
+			this.particle.free();
+	}				
+
 	Signal.prototype.travel = function() {
 
 		var pos;
@@ -307,8 +312,12 @@
 			//console.log("fired signal = "+this.startingPoint);
 		}
 
-		pos = this.axon.getPoint(this.t);
-		this.particle.set(pos.x, pos.y, pos.z);
+		if (this.particle != null)
+		{
+			pos = this.axon.getPoint(this.t);
+			this.particle.set(pos.x, pos.y, pos.z);	
+		}
+
 		// if (pos === temp)
 		// 	this.alive = false;
 
@@ -780,32 +789,29 @@
 
 		// update neurons state and release signal
 		for (ii = 0; ii < this.allNeurons.length; ii++) {
-
 			n = this.allNeurons[ii];
-			if (this.allSignals.length < this.currentMaxSignals - this.maxConnectionPerNeuron) { // currentMaxSignals - maxConnectionPerNeuron because allSignals can not bigger than particlePool size
-				// the astrocyte we're taking energy from
-				var a = n.canFire();
-				if (n.receivedSignal && a != null) { // Astrocyte mode
-					// if (n.receivedSignal && n.firedCount < 8)  {	// Traversal mode
-					// if (n.receivedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
-					// if (n.receivedSignal && !n.fired )  {	// Single propagation mode
+			// the astrocyte we're taking energy from
+			var a = n.canFire();
+			if (n.receivedSignal && a != null) { // Astrocyte mode
+				// if (n.receivedSignal && n.firedCount < 8)  {	// Traversal mode
+				// if (n.receivedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
+				// if (n.receivedSignal && !n.fired )  {	// Single propagation mode
 
-					// n.fired = true;
-					// n.acc = n.acc - 0.125; // resets energy of neuron
-					// // decrease energy level of astrocyte responsible for 
-					// // giving the neuron the energy it needed to fire
-					// a.deplete();
+				// n.fired = true;
+				// n.acc = n.acc - 0.125; // resets energy of neuron
+				// // decrease energy level of astrocyte responsible for 
+				// // giving the neuron the energy it needed to fire
+				// a.deplete();
 
-					// n.lastSignalRelease = currentTime;
-					// n.releaseDelay = THREE.Math.randInt(100, 1000);
-					if (n.fire() === true) {
-						a.deplete();
-						n.lastSignalRelease = currentTime;
-						this.releaseSignalAt(n);
-					}
+				// n.lastSignalRelease = currentTime;
+				// n.releaseDelay = THREE.Math.randInt(100, 1000);
+				if (n.fire() === true) {
+					a.deplete();
+					n.lastSignalRelease = currentTime;
+					this.releaseSignalAt(n);
 				}
-
 			}
+
 
 			n.receivedSignal = false; // if neuron received signal but still in delay reset it
 			//TODO
@@ -852,7 +858,7 @@
 			s.travel();
 
 			if (!s.alive) {
-				s.particle.free();
+				s.freeParticle();
 				this.allSignals.splice(j, 1);
 			}
 
