@@ -69,6 +69,12 @@
 
 	};
 
+	Neuron.prototype.decay = function(){
+		this.acc = 0.9 * this.acc;
+		if (this.acc < 0)
+			this.acc = 0;
+	}
+
 	Neuron.prototype.tryConnect = function(neuronB, network){
 
 		var n1 = this;
@@ -101,26 +107,20 @@
 			//one directional connection starting from n1
 			if(rand === 0){
 			var connectedAxon = n1.connectNeuronTwoDirection(n2);
-			network.constructAxonArrayBuffer(connectedAxon);
-			var rand = (Math.random()*41+80)/100;
-			connectedAxon.weight = rand * (1/connectedAxon.cpLength);
-		}
+			}
 
 		 	//one directional connection starting from n2
 			else if(rand === 1){
 				var connectedAxon = n2.connectNeuronOneDirection(n1);
-				network.constructAxonArrayBuffer(connectedAxon);
-				var rand = (Math.random()*41+80)/100;
-				connectedAxon.weight = rand * (1/connectedAxon.cpLength);
 			}
 
 			//two directional connection
-			else if(rand === 2){
+			else {
 				var connectedAxon = n1.connectNeuronOneDirection(n2);
-				network.constructAxonArrayBuffer(connectedAxon);
-				var rand = (Math.random()*41+80)/100;
-				connectedAxon.weight = rand * (1/connectedAxon.cpLength);
 			}
+			network.constructAxonArrayBuffer(connectedAxon);
+			var rand = (Math.random()*41+80)/100;
+			connectedAxon.weight = rand * (1/connectedAxon.cpLength);
 
 		}
 	}
@@ -130,21 +130,21 @@
 		this.firedCount += 1;
 		this.receivedSignal = false;
 
-		var signals = [];
 		// create signal to all connected axons
-		for (var i = 0; i < this.connection.length; i++) {
-			if (this.connection[i].axon !== this.prevReleaseAxon) {
-				var c = new Signal(particlePool, minSpeed, maxSpeed);
-				c.setConnection(this.connection[i]);
-				signals.push(c);
-			}
-		}
-		return signals;
-
+		return this.connection.filter(function(connection)
+			{
+				return connection.axon !== this.prevReleaseAxon;
+			}, this)
+			.map(function(connection)
+			{
+				return new Signal(connection, particlePool, minSpeed, maxSpeed);
+			})
 	};
 
+
 	//returns active astrocyte, it's taking energy from
-	Neuron.prototype.canFire = function() {
+	Neuron.prototype.canFire = function(neighbors) {
+		neighbors = typeof neighbors !== 'undefined' ? neighbors : true;
 		if (this.acc >= network_settings.firing_threshold) {
 			var total = this.neurons.length;
 			//console.log(" i"+this.neurons.length);
@@ -153,32 +153,32 @@
 			if (this.astrocyte.availableEnergy > astrocyte_settings.minEnergy) {
 				return this.astrocyte;
 			}
+
 			// if we get here, the directly linked astrocyte did not have enough energy
 			// check the astrocytes of surrounding neurons to see if they have enough energy
-			for (var i = 0; i < total; i++) {
-				if (this.neurons[i].astrocyte.availableEnergy > astrocyte_settings.minEnergy) {
-					return this.neurons[i].astrocyte;
+			if (neighbors) 
+				for (var i = 0; i < total; i++) {
+					var astrocyte = this.neurons[i].canFire(false)
+					if (astrocyte)
+						return astrocyte;
 				}
-			}
 		}
 		return null;
 
 	};
 
+	Neuron.prototype.effectiveSignal = function() {
+		return (this.prevReleaseAxon.weight * network_settings.signal_weight);
+	}
+
 	//accumulation function when recieving a signal from an excitory neuron
 	Neuron.prototype.buildExcitor = function() {
-		this.acc = this.acc + (this.prevReleaseAxon.weight * network_settings.signal_weight);
-		if (this.acc > 1)
-			this.acc = 1; // each signal adds 1/6 * axon weight.
-		//console.log(this.acc);
+		this.acc = Math.min(1, this.acc + this.effectiveSignal());
 	};
 
 	//accumulation function when recieving a signal from an inhibitory neuron
 	Neuron.prototype.buildInhibitor = function() {
-		this.acc = this.acc - (this.prevReleaseAxon.weight * network_settings.signal_weight);
-		if (this.acc < 1)
-			this.acc = 0; // each signal adds 1/6 * axon weight.
-		//console.log(this.acc);
+		this.acc = Math.max(0, this.acc - this.effectiveSignal());
 	};
 
 	//neuron firing function with probability of firing equal to the energy level
@@ -238,7 +238,7 @@
 
 	// Signal ----------------------------------------------------------------
 
-	function Signal(particlePool, minSpeed, maxSpeed) {
+	function Signal(connection, particlePool, minSpeed, maxSpeed) {
 
 		this.minSpeed = minSpeed;
 		this.maxSpeed = maxSpeed;
@@ -250,6 +250,7 @@
 		this.particle = particlePool.getParticle();
 		this.excitor = true;
 		THREE.Vector3.call(this);
+		this.setConnection(connection);
 
 	}
 
@@ -264,29 +265,40 @@
 
 	};
 
+	Signal.prototype.dispatchSignal = function(from, to)
+	{
+		this.alive = false;
+		to.receivedSignal = true;
+		to.signalCount++;
+		to.prevReleaseAxon = this.axon;
+		//checks what type of neuron sent the signal to call the correct build function
+		if (from.type == EXCITOR)
+			to.buildExcitor();
+		else if (from.type == INHIBITOR) {
+			//console.log("firer = "+this.axon.neuronA.type+" reciever = "+this.axon.neuronB.type);
+			//console.log("energy before = "+this.axon.neuronB.acc);
+			to.buildInhibitor();
+			//console.log("energy after = "+this.axon.neuronB.acc);
+		}
+
+	}
+
+	Signal.prototype.freeParticle = function(){
+		if (this.particle != null)
+			this.particle.free();
+	}				
+
 	Signal.prototype.travel = function() {
 
 		var pos;
-		var temp = this.axon.getPoint(this.t);
+		//var temp = this.axon.getPoint(this.t);
 		// console.log("direction of axon = "+this.axon.direction + "starting point = "+this.startingPoint);
 		// if (this.startingPoint === 'A' && (this.axon.direction === 0 || this.axon.direction === 2)) {
 		if (this.startingPoint === 'A') {
 			this.t += this.speed;
 			if (this.t >= 1) {
 				this.t = 1;
-				this.alive = false;
-				this.axon.neuronB.receivedSignal = true;
-				this.axon.neuronB.signalCount++;
-				this.axon.neuronB.prevReleaseAxon = this.axon;
-				//checks what type of neuron sent the signal to call the correct build function
-				if (this.axon.neuronA.type == EXCITOR)
-					this.axon.neuronB.buildExcitor();
-				else if (this.axon.neuronA.type == INHIBITOR) {
-					//console.log("firer = "+this.axon.neuronA.type+" reciever = "+this.axon.neuronB.type);
-					//console.log("energy before = "+this.axon.neuronB.acc);
-					this.axon.neuronB.buildInhibitor();
-					//console.log("energy after = "+this.axon.neuronB.acc);
-				}
+				this.dispatchSignal(this.axon.neuronA, this.axon.neuronB);
 			}
 			//console.log("fired signal = "+this.startingPoint);
 
@@ -295,20 +307,17 @@
 			this.t -= this.speed;
 			if (this.t <= 0) {
 				this.t = 0;
-				this.alive = false;
-				this.axon.neuronA.receivedSignal = true;
-				this.axon.neuronA.signalCount++;
-				this.axon.neuronA.prevReleaseAxon = this.axon;
-				if (this.axon.neuronB.type == EXCITOR)
-					this.axon.neuronA.buildExcitor();
-				else if (this.axon.neuronB.type == INHIBITOR)
-					this.axon.neuronA.buildInhibitor();
+				this.dispatchSignal(this.axon.neuronB, this.axon.neuronA);
 			}
 			//console.log("fired signal = "+this.startingPoint);
 		}
 
-		pos = this.axon.getPoint(this.t);
-		this.particle.set(pos.x, pos.y, pos.z);
+		if (this.particle != null)
+		{
+			pos = this.axon.getPoint(this.t);
+			this.particle.set(pos.x, pos.y, pos.z);	
+		}
+
 		// if (pos === temp)
 		// 	this.alive = false;
 
@@ -407,8 +416,7 @@
 	function Particle(particlePool) {
 
 		this.particlePool = particlePool;
-		this.available = true;
-		THREE.Vector3.call(this, particlePool.offScreenPos.x, particlePool.offScreenPos.y, particlePool.offScreenPos.z);
+		this.free();
 
 	}
 
@@ -575,36 +583,24 @@
 	//function for astrocyte energy regeneration
 	//TODO: somewhat messy needs tiding up
 	NeuralNetwork.prototype.regenerationFunction = function() {
-		var increasing;
-		if (astrocyte_settings.replenishEnergy >= astrocyte_settings.minThreshold)
-			increasing = true;
-		else
-			increasing = false;
-		var increase = function() {
-			if (astrocyte_settings.replenishEnergy + astrocyte_settings.amplitude > astrocyte_settings.maxThreshold) {
-				increasing = false;
-				decrease();
-			} else
-				astrocyte_settings.replenishEnergy += astrocyte_settings.amplitude;
-		};
-		var decrease = function() {
-			if (astrocyte_settings.replenishEnergy - astrocyte_settings.amplitude < astrocyte_settings.minThreshold) {
-				increasing = true;
-				increase();
-			} else
-				astrocyte_settings.replenishEnergy -= astrocyte_settings.amplitude;
-		};
+		var sign = 1;
+		var move = function()
+		{
+			astrocyte_settings.replenishEnergy += sign*astrocyte_settings.amplitude;
+			if ((astrocyte_settings.replenishEnergy > astrocyte_settings.maxThreshold) || 
+				(astrocyte_settings.replenishEnergy < astrocyte_settings.minThreshold))
+			{
+				astrocyte_settings.replenishEnergy -= sign*astrocyte_settings.amplitude;
+				sign *= -1;
+				move();
+			}
+		}
 		var regeneration = function() {
-
 				setTimeout(function() {
-					if (increasing)
-						increase();
-					else if (!increasing)
-						decrease();
+					move();
 					regeneration();
 					//console.log(astrocyte_settings.replenishEnergy);
 				}, astrocyte_settings.frequency);
-
 			}
 			//console.log("regeneration");
 		regeneration();
@@ -617,21 +613,13 @@
 
 		var decay = function() {
 			setTimeout(function() {
-				for (var i = 0; i < that.allNeurons.length; i++) {
-					var n = that.allNeurons[i];
-					//console.log(n.acc);
-					n.acc = 0.9 * n.acc;
-					if (n.acc < 0)
-						n.acc = 0;
-					//console.log("after"+ n.acc);
-				}
-				//console.log("finish loop");
+				that.allNeurons.forEach(function(neuron){
+					neuron.decay();
+				})
 				decay();
 			}, network_settings.decayTime);
-			//console.log("after loop");
 		};
 
-		//console.log("again");
 		decay();
 
 	};
@@ -759,6 +747,9 @@
 			transferToArrayBuffer(this.axonIndices, axonIndices);
 			transferToArrayBuffer(this.axonPositions, axonPositions);
 			transferToArrayBuffer(this.shaderAttributes.opacityAttr.value, axonOpacities);
+			this.axonIndices = [];
+			this.axonPositions = [];
+			this.axonOpacities = [];
 
 			function transferToArrayBuffer(fromArr, toArr) {
 				for (i=0; i<toArr.length; i++) {
@@ -798,32 +789,29 @@
 
 		// update neurons state and release signal
 		for (ii = 0; ii < this.allNeurons.length; ii++) {
-
 			n = this.allNeurons[ii];
-			if (this.allSignals.length < this.currentMaxSignals - this.maxConnectionPerNeuron) { // currentMaxSignals - maxConnectionPerNeuron because allSignals can not bigger than particlePool size
-				// the astrocyte we're taking energy from
-				var a = n.canFire();
-				if (n.receivedSignal && a != null) { // Astrocyte mode
-					// if (n.receivedSignal && n.firedCount < 8)  {	// Traversal mode
-					// if (n.receivedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
-					// if (n.receivedSignal && !n.fired )  {	// Single propagation mode
+			// the astrocyte we're taking energy from
+			var a = n.canFire();
+			if (n.receivedSignal && a != null) { // Astrocyte mode
+				// if (n.receivedSignal && n.firedCount < 8)  {	// Traversal mode
+				// if (n.receivedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
+				// if (n.receivedSignal && !n.fired )  {	// Single propagation mode
 
-					// n.fired = true;
-					// n.acc = n.acc - 0.125; // resets energy of neuron
-					// // decrease energy level of astrocyte responsible for 
-					// // giving the neuron the energy it needed to fire
-					// a.deplete();
+				// n.fired = true;
+				// n.acc = n.acc - 0.125; // resets energy of neuron
+				// // decrease energy level of astrocyte responsible for 
+				// // giving the neuron the energy it needed to fire
+				// a.deplete();
 
-					// n.lastSignalRelease = currentTime;
-					// n.releaseDelay = THREE.Math.randInt(100, 1000);
-					if (n.fire() === true) {
-						a.deplete();
-						n.lastSignalRelease = currentTime;
-						this.releaseSignalAt(n);
-					}
+				// n.lastSignalRelease = currentTime;
+				// n.releaseDelay = THREE.Math.randInt(100, 1000);
+				if (n.fire() === true) {
+					a.deplete();
+					n.lastSignalRelease = currentTime;
+					this.releaseSignalAt(n);
 				}
-
 			}
+
 
 			n.receivedSignal = false; // if neuron received signal but still in delay reset it
 			//TODO
@@ -870,13 +858,8 @@
 			s.travel();
 
 			if (!s.alive) {
-				s.particle.free();
-				for (var k = this.allSignals.length - 1; k >= 0; k--) {
-					if (s === this.allSignals[k]) {
-						this.allSignals.splice(k, 1);
-						break;
-					}
-				}
+				s.freeParticle();
+				this.allSignals.splice(j, 1);
 			}
 
 		}
@@ -1044,7 +1027,7 @@
 	//gui_settings.add(network_settings, 'NeuronConnectionInhibitor', 0, 20).name('Max Inhibitor Neuron Connections');
 	gui_settings.add(neuralNet, 'signalMinSpeed', 0.01, 0.1, 0.01).name('Signal Min Speed');
 	gui_settings.add(neuralNet, 'signalMaxSpeed', 0.01, 0.1, 0.01).name('Signal Max Speed');
-	gui_settings.add(network_settings, 'reload');
+	gui_settings.add(network_settings, 'reload'); 
 	gui_settings.open();
 
 	var gui_settings = gui.addFolder('Astrocyte Settings');
