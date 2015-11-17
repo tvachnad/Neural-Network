@@ -107,10 +107,10 @@
 
 			//one directional connection starting from n1
 			if(rand === 0){
-			var connectedAxon = n1.connectNeuronTwoDirection(n2);
-			constring = (j+1).toString().concat(",").concat((k+1)).concat(",1\n");
-			wstring = (j+1).toString().concat(",").concat((k+1)).concat(",");
-		}
+				var connectedAxon = n1.connectNeuronTwoDirection(n2);
+				constring = (j+1).toString().concat(",").concat((k+1)).concat(",1\n");
+				wstring = (j+1).toString().concat(",").concat((k+1)).concat(",");
+			}
 
 		 	//one directional connection starting from n2
 			else if(rand === 1){
@@ -546,8 +546,10 @@
 	function NeuralNetwork() {
 
 		this.initialized = false;
-		this.logger = new Logger("firing");
-		this.logger2 = new Logger("potential");
+		this.logger = null;
+		this.logger2 = null;
+		//this.logger = new Logger("firing");
+		//this.logger2 = new Logger("potential");
 		this.numberExcite = 0;
 		this.numberInhibit = 0;
 		this.connections = [];
@@ -698,9 +700,10 @@
 		//load connectivity matrix
 		d3.csv("./static/models/connectivity.csv", function(data) {
 
-  		for(var q = 0;q<188;q++){
-  			self.connectivityMatrix[q]=data[q];
-  		}
+	  		for(var q = 0;q<188;q++){
+	  			self.connectivityMatrix[q]=data[q];
+	  		}
+	  	});
   		// console.log(data);
   		// console.log(self.connectivityMatrix);
 
@@ -730,20 +733,21 @@
 			self.decayFunction();
 
 		}); // end of loader
-		
-		$.ajax({
-		 	type: "POST",
-		 	url: "/createLogs",
-		  	contentType: "application/json; charset=utf-8",
-		  	data: JSON.stringify("Create the logs"),
-		  	dataType: 'json',
-		  	success: function(data) {
-		  		console.log("success");
-		  	},
-		  	error: function(error) {
-		  		console.log(error);
-		  	}
-		});
+		if(this.logger != null){
+			$.ajax({
+			 	type: "POST",
+			 	url: "/createLogs",
+			  	contentType: "application/json; charset=utf-8",
+			  	data: JSON.stringify("Create the logs"),
+			  	dataType: 'json',
+			  	success: function(data) {
+			  		console.log("success");
+			  	},
+			  	error: function(error) {
+			  		console.log(error);
+			  	}
+			});
+		}
 
 	};
 
@@ -826,38 +830,41 @@
 					// connect neuron if distance ... and limit connection per neuron to not more than x
 					
 					n1.tryConnect(n2, this, j, k);
-					if(this.connections.length > 1000){
-					$.ajax({
-					 	type: "POST",
-					 	url: "/connection",
-					  	contentType: "application/json; charset=utf-8",
-					  	data: JSON.stringify(this.connections),
-					  	dataType: 'json',
-					  	success: function(data) {
-					  		console.log("success");
-					  	},
-					  	error: function(error) {
-					  		console.log(error);
-					  	}
-					});
-					$.ajax({
-					 	type: "POST",
-					 	url: "/conweights",
-					  	contentType: "application/json; charset=utf-8",
-					  	data: JSON.stringify(this.connWeight),
-					  	dataType: 'json',
-					  	success: function(data) {
-					  		console.log("success");
-					  	},
-					  	error: function(error) {
-					  		console.log(error);
-					  	}
-					});
-					this.connections = [];
-					this.connWeight = [];
+					if(this.logger != null){
+						if(this.connections.length > 1000){
+							$.ajax({
+							 	type: "POST",
+							 	url: "/connection",
+							  	contentType: "application/json; charset=utf-8",
+							  	data: JSON.stringify(this.connections),
+							  	dataType: 'json',
+							  	success: function(data) {
+							  		console.log("success");
+							  	},
+							  	error: function(error) {
+							  		console.log(error);
+							  	}
+							});
+							$.ajax({
+							 	type: "POST",
+							 	url: "/conweights",
+							  	contentType: "application/json; charset=utf-8",
+							  	data: JSON.stringify(this.connWeight),
+							  	dataType: 'json',
+							  	success: function(data) {
+							  		console.log("success");
+							  	},
+							  	error: function(error) {
+							  		console.log(error);
+							  	}
+							});
+						}
+						this.connections = [];
+						this.connWeight = [];
+					}
 				}
 			}
-			if(this.connections.length > 0){
+			if(this.logger != null && this.connections.length > 0){
 				$.ajax({
 				 	type: "POST",
 				 	url: "/connection",
@@ -956,8 +963,10 @@
 				// n.lastSignalRelease = currentTime;
 				// n.releaseDelay = THREE.Math.randInt(100, 1000);
 				if (n.fire() === true) {
-					this.logger.addToLastEntry(ii+1);
-					this.logger2.addToLastEntry(n.acc+0.125);					
+					if(this.logger != null){
+						this.logger.addToLastEntry(ii+1);
+						this.logger2.addToLastEntry(n.acc+0.125);					
+					}
 					a.deplete();
 					n.lastSignalRelease = currentTime;
 					this.releaseSignalAt(n);
@@ -973,12 +982,14 @@
 			// if(n.astrocyte.availableEnergy<=astrocyte_settings.minEnergy)
 			// n.astrocyte.replenish();
 		}
-		if(this.logger.getLastEntry() >= 19){
-			this.logger.sendToServer();
-			this.logger2.sendToServer();
-		} else {
-			this.logger2.newEntry();
-			this.logger.newEntry();
+		if(this.logger != null){
+			if(this.logger.getLastEntry() >= 19){
+				this.logger.sendToServer();
+				this.logger2.sendToServer();
+			} else {
+				this.logger2.newEntry();
+				this.logger.newEntry();
+			}
 		}
 		// reset all neurons and when there is X signal
 		if (this.allSignals.length <= 0) {
