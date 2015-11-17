@@ -690,49 +690,29 @@
 
 	};
 
-	NeuralNetwork.prototype.initNeuralNetwork = function() {
+	NeuralNetwork.prototype.constructNeuralNetwork = function(loadedObject){
+		var loadedMesh = loadedObject.children[0];
+		var loadedMeshVertices = loadedMesh.geometry.vertices;
 
-		// obj loader
-		var self = this;
-		var loadedMesh, loadedMeshVertices;
-		var loader = new THREE.OBJLoader();
+		// render loadedMesh
+		loadedMesh.material = new THREE.MeshBasicMaterial({
+			transparent: true,
+			opacity: 0.05,
+			depthTest: false,
+			color: 0x0088ff,
+			blending: THREE.AdditiveBlending
+		});
+		scene.add(loadedObject);
 
-		//load connectivity matrix
-		d3.csv("./static/models/connectivity.csv", function(data) {
+		this.initNeurons(loadedMeshVertices);
+		this.initAxons();
 
-	  		for(var q = 0;q<188;q++){
-	  			self.connectivityMatrix[q]=data[q];
-	  		}
-	  	});
-  		// console.log(data);
-  		// console.log(self.connectivityMatrix);
+		this.initialized = true;
 
-		loader.load('./static/models/brain_vertex_low.obj', function constructNeuralNetwork(loadedObject) {
-
-			loadedMesh = loadedObject.children[0];
-			loadedMeshVertices = loadedMesh.geometry.vertices;
-
-			// render loadedMesh
-			loadedMesh.material = new THREE.MeshBasicMaterial({
-				transparent: true,
-				opacity: 0.05,
-				depthTest: false,
-				color: 0x0088ff,
-				blending: THREE.AdditiveBlending
-			});
-			scene.add(loadedObject);
-
-			self.initNeurons(loadedMeshVertices);
-			self.initAxons();
-
-			self.initialized = true;
-
-			console.log('Neural Network initialized');
-			document.getElementById('loading').style.display = 'none'; // hide loading animation when finish loading model
-			self.regenerationFunction();
-			self.decayFunction();
-
-		}); // end of loader
+		console.log('Neural Network initialized');
+		document.getElementById('loading').style.display = 'none'; // hide loading animation when finish loading model
+		this.regenerationFunction();
+		this.decayFunction();
 		if(this.logger != null){
 			$.ajax({
 			 	type: "POST",
@@ -748,8 +728,23 @@
 			  	}
 			});
 		}
+	}
+	NeuralNetwork.prototype.initNeuralNetwork = function() {
 
-	};
+		// obj loader
+		var self = this;
+		var loader = new THREE.OBJLoader();
+
+		//load connectivity matrix
+		d3.csv("./static/models/connectivity.csv", function(data) {
+	  		for(var q = 0;q<188;q++){
+	  			self.connectivityMatrix[q]=data[q];
+	  		}
+			loader.load('./static/models/brain_vertex_low.obj', function(loadedObject){
+				self.constructNeuralNetwork(loadedObject);
+				});
+			});
+	}
 
 	NeuralNetwork.prototype.printRegions = function(){
 		for(var i = 0; i<this.allNeurons.length; i++){
