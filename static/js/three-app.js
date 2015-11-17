@@ -246,7 +246,7 @@
 	//regenerates energy of the astrocyte in a certain time period that can be set in the settings
 	Astrocyte.prototype.replenish = function() {
 		var that = this;
-		setInterval(function() {
+		setTimeout(function() {
 			that.resetEnergy();
 		}, astrocyte_settings.regenerationTime);
 	};
