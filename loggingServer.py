@@ -77,12 +77,19 @@ def logFiring():
 	log = request.get_json()
 	logserv.logFiring(log)
 	return "success"
+
 @app.route('/potential', methods=['POST'])
 def logPotential():
 	log = request.get_json()
 	logserv.logPot(log)
 	return "success"
 
+@app.route('/miss', methods=['POST'])
+def logMiss():
+	log = request.get_json()
+	logserv.logPot(log)
+	return "success"
+	
 @app.route('/connection', methods=['POST'])
 def logConnections():
 	log = request.get_json()
