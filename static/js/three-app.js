@@ -301,7 +301,10 @@
 
 	Signal.prototype.freeParticle = function(){
 		if (this.particle != null)
+		{
 			this.particle.free();
+			this.particle = null;
+		}
 	}				
 
 	Signal.prototype.travel = function() {
@@ -1017,16 +1020,15 @@
 		}
 
 		// update and remove signals
-		for (var j = this.allSignals.length - 1; j >= 0; j--) {
-			var s = this.allSignals[j];
-			s.travel();
-
-			if (!s.alive) {
-				s.freeParticle();
-				this.allSignals.splice(j, 1);
-			}
-
-		}
+		this.allSignals.map(function(signal){
+			signal.travel();
+			if (!signal.alive)
+				signal.freeParticle();
+		})
+		this.allSignals = this.allSignals.filter(function(signal)
+		{
+			return signal.alive;
+		})
 
 		// update particle pool vertices
 		this.particlePool.update();
