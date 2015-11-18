@@ -159,30 +159,60 @@
 
 
 	//returns active astrocyte, it's taking energy from
-	Neuron.prototype.canFire = function(neighbors) {
+	Neuron.prototype.checkEnergy = function(neighbors) {
 		neighbors = typeof neighbors !== 'undefined' ? neighbors : true;
-		if (this.acc >= network_settings.firing_threshold) {
-			var total = this.neurons.length;
-			//console.log(" i"+this.neurons.length);
-			var activeAstrocyte = null;
-			// see if the astrocyte directly linked to this neuron has the energy needed to fire
-			if (this.astrocyte.availableEnergy > astrocyte_settings.minEnergy) {
-				return this.astrocyte;
-			}
-
-			// if we get here, the directly linked astrocyte did not have enough energy
-			// check the astrocytes of surrounding neurons to see if they have enough energy
-			if (neighbors) 
-				for (var i = 0; i < total; i++) {
-					var astrocyte = this.neurons[i].canFire(false)
-					if (astrocyte)
-						return astrocyte;
-				}
+		var total = this.neurons.length;
+		//console.log(" i"+this.neurons.length);
+		var activeAstrocyte = null;
+		// see if the astrocyte directly linked to this neuron has the energy needed to fire
+		if (this.astrocyte.hasEnergy() === true) {
+			return this.astrocyte;
 		}
-		return null;
+
+		// if we get here, the directly linked astrocyte did not have enough energy
+		// check the astrocytes of surrounding neurons to see if they have enough energy
+		if (neighbors){ 
+			for (var i = 0; i < total; i++) {
+				var astrocyte = this.neurons[i].checkEnergy(false)
+				if (astrocyte.hasEnergy() === true)
+					return astrocyte;
+			}
+		}
+		return this.astrocycte.hasEnergy();
 
 	};
-
+	Neuron.prototype.willFire = function()
+	{
+		if (this.acc >= network_settings.firing_threshold)
+			return Math.random() < this.acc;
+	}
+	//neuron firing function with probability of firing equal to the energy level
+	Neuron.prototype.fire = function() {
+		this.fired = true;
+		this.acc = this.acc - 0.125; // resets energy of neuron
+		// decrease energy level of astrocyte responsible for 
+		// giving the neuron the energy it needed to fire
+		this.releaseDelay = THREE.Math.randInt(100, 1000);
+	};
+	
+	Neuron.prototype.fireIfCan(neuralNet)
+	{
+		var ret = [false, null];
+		if (this.willFire())
+		{
+			var a = this.checkEnergy();
+			if (n.receivedSignal && a.hasEnergy() === true) { // Astrocyte mode
+					this.fire();
+					ret = [true, n.acc+0.125]
+					a.deplete();
+					this.lastSignalRelease = currentTime;
+					neuralNet.releaseSignalAt(n);
+			} else {
+				ret = [false, a.hasEnergy()]
+			}
+		this.receivedSignal = false; // if neuron received signal but still in delay reset it
+		return ret;
+	}
 	Neuron.prototype.effectiveSignal = function() {
 		return (this.prevReleaseAxon.weight * network_settings.signal_weight);
 	}
@@ -232,7 +262,12 @@
 		//console.log("reset: "+ this.availableEnergy);
 
 	};
-
+	Astrocyte.prototype.hasEnergy = function(){
+		if(this.availableEnergy >= astrocyte_settings.minEnergy)
+			return true;
+		else
+			return this.availableEnergy;
+	}
 	//depletes energy from the astrocyte when the neuron fires
 	Astrocyte.prototype.deplete = function() {
 		this.availableEnergy -= 0.125; //energy needed to fire a signal default: 1/8
@@ -551,8 +586,10 @@
 		this.initialized = false;
 		this.logger = null;
 		this.logger2 = null;
+		this.logger3 = null;
 		//this.logger = new Logger("firing");
 		//this.logger2 = new Logger("potential");
+		//this.logger3 = new Logger("miss");
 		this.numberExcite = 0;
 		this.numberInhibit = 0;
 		this.connections = [];
@@ -946,47 +983,25 @@
 		for (ii = 0; ii < this.allNeurons.length; ii++) {
 			n = this.allNeurons[ii];
 			// the astrocyte we're taking energy from
-			var a = n.canFire();
-			if (n.receivedSignal && a != null) { // Astrocyte mode
-				// if (n.receivedSignal && n.firedCount < 8)  {	// Traversal mode
-				// if (n.receivedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
-				// if (n.receivedSignal && !n.fired )  {	// Single propagation mode
-
-				// n.fired = true;
-				// n.acc = n.acc - 0.125; // resets energy of neuron
-				// // decrease energy level of astrocyte responsible for 
-				// // giving the neuron the energy it needed to fire
-				// a.deplete();
-
-				// n.lastSignalRelease = currentTime;
-				// n.releaseDelay = THREE.Math.randInt(100, 1000);
-				if (n.fire() === true) {
-					if(this.logger != null){
-						this.logger.addToLastEntry(ii+1);
-						this.logger2.addToLastEntry(n.acc+0.125);					
-					}
-					a.deplete();
-					n.lastSignalRelease = currentTime;
-					this.releaseSignalAt(n);
+			var result = n.fireIfCan();
+			if(this.logger != null){
+				if (result[0] === true) {
+					this.logger.addToLastEntry(ii+1);
+					this.logger2.addToLastEntry(result[1]);					
+				} else if (result[1] != null) {
+					this.logger3.addToLastEntry(ii+1, result[1])
 				}
 			}
-
-
-			n.receivedSignal = false; // if neuron received signal but still in delay reset it
-			//TODO
-			// while we're iterating through the neurons, check each corresponding astrocyte to see if
-			// its energy was all used up, update time remaining until it gets its energy back, possibly
-			// give it its energy back if it's been long enough
-			// if(n.astrocyte.availableEnergy<=astrocyte_settings.minEnergy)
-			// n.astrocyte.replenish();
 		}
 		if(this.logger != null){
 			if(this.logger.getLastEntry() >= 19){
 				this.logger.sendToServer();
 				this.logger2.sendToServer();
+				this.logger3.sendToServer();
 			} else {
 				this.logger2.newEntry();
 				this.logger.newEntry();
+				this.logger3.newEntry();
 			}
 		}
 		// reset all neurons and when there is X signal
