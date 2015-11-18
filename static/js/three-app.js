@@ -159,7 +159,7 @@
 
 
 	//returns active astrocyte, it's taking energy from
-	Neuron.prototype.checkEnergy = function(neighbors) {
+	Neuron.prototype.astrocyteWithEnergy = function(neighbors) {
 		neighbors = typeof neighbors !== 'undefined' ? neighbors : true;
 		var total = this.neurons.length;
 		//console.log(" i"+this.neurons.length);
@@ -173,12 +173,12 @@
 		// check the astrocytes of surrounding neurons to see if they have enough energy
 		if (neighbors){ 
 			for (var i = 0; i < total; i++) {
-				var astrocyte = this.neurons[i].checkEnergy(false);
-				if (astrocyte.hasEnergy() === true)
+				var astrocyte = this.neurons[i].astrocyteWithEnergy(false);
+				if (astrocyte == null)
 					return astrocyte;
 			}
 		}
-		return this.astrocycte.hasEnergy();
+		return null;
 
 	};
 	Neuron.prototype.willFire = function()
@@ -197,20 +197,21 @@
 		this.releaseDelay = THREE.Math.randInt(100, 1000);
 	};
 	
-	Neuron.prototype.fireIfCan = function(neuralNet)
+	Neuron.prototype.fireIfCan = function(neuralNet, currentTime)
 	{
 		var ret = [false, null];
 		if (this.willFire())
 		{
-			var a = this.checkEnergy();
-			if (n.receivedSignal && a.hasEnergy() === true) { // Astrocyte mode
+			var astrocyte = this.astrocyteWithEnergy();
+			if (this.receivedSignal && astrocyte != null) { // Astrocyte mode
+					var prevacc = this.acc;
 					this.fire();
-					ret = [true, n.acc+0.125]
-					a.deplete();
+					ret = [true, prevacc]
+					astrocyte.deplete();
 					this.lastSignalRelease = currentTime;
-					neuralNet.releaseSignalAt(n);
+					neuralNet.releaseSignalAt(this);
 			} else {
-				ret = [false, a.hasEnergy()];
+				ret = [false, this.astrocyte.availableEnergy];
 			}
 		}
 		this.receivedSignal = false; // if neuron received signal but still in delay reset it
@@ -970,7 +971,7 @@
 		for (ii = 0; ii < this.allNeurons.length; ii++) {
 			n = this.allNeurons[ii];
 			// the astrocyte we're taking energy from
-			var result = n.fireIfCan();
+			var result = n.fireIfCan(this, currentTime);
 			if(this.logger != null){
 				if (result[0] === true) {
 					this.logger.addToLastEntry(ii+1);
