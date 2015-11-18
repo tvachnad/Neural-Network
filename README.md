@@ -1,4 +1,4 @@
-Model of neuronal energy requirement in the human brain
+Model of neuronal energy requirements in the human brain
 ==============
 
 [Demo](https://tvachnad.github.io/Neural-Network/)
