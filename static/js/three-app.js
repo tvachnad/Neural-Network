@@ -236,7 +236,7 @@
 	//depletes energy from the astrocyte when the neuron fires
 	Astrocyte.prototype.deplete = function() {
 		this.availableEnergy -= 0.125; //energy needed to fire a signal default: 1/8
-		if (this.availableEnergy <= astrocyte_settings.maxEnergy) { // if energy not full, then regenerate more
+		if (this.availableEnergy <= astrocyte_settings.minEnergy) { // if energy not full, then regenerate more
 			// make it take 5 iterations to be ready again
 			this.lastUsed = 100;
 			this.replenish();
