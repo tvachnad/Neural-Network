@@ -386,7 +386,7 @@
 		this.poolSize = poolSize;
 		this.pGeom = new THREE.Geometry();
 		this.particles = this.pGeom.vertices;
-		this.availableParticles = []
+		this.freeParticles = []
 
 		this.offScreenPos = new THREE.Vector3(9999, 9999, 9999); // #CM0A r68 PointCloud default frustumCull = true(extended from Object3D), so need to set to 'false' for this to work with oppScreenPos, else particles will dissappear
 
@@ -435,15 +435,15 @@
 	}
 
 	ParticlePool.prototype.getParticle = function() {
-		if (this.availableParticles.length > 0)
-			return this.availableParticles.pop();
+		if (this.freeParticles.length > 0)
+			return this.freeParticles.pop();
 		return null;
 
 	};
 
 	ParticlePool.prototype.free = function(particle){
 		particle.set(this.offScreenPos.x, this.offScreenPos.y, this.offScreenPos.z);
-		this.availableParticles.push(particle);
+		this.freeParticles.push(particle);
 	};
 
 	ParticlePool.prototype.update = function() {
