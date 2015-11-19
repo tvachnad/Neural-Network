@@ -89,7 +89,11 @@
         probFromMatrix = Number(probFromMatrix);
         probFromMatrix = probFromMatrix / 10000;
 
-        if(randomForMatrix < probFromMatrix || r1 === r2){
+        if ( n1 !== n2 && n1.distanceTo( n2 ) < network.maxAxonDist) {
+        	canConnect = true;
+        }
+
+        else if(n1 !== n2 && randomForMatrix < probFromMatrix){
         	canConnect = true;
         }
 
