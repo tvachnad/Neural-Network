@@ -26,7 +26,7 @@
 		this.fired = false;
 		this.firedCount = 0;
 		this.prevReleaseAxon = null;
-		this.refactoryPeriod = 100;
+		this.refactoryPeriod = 10;
 		this.xPos = x;
 		this.yPos = y;
 		this.zPos = z;
@@ -74,7 +74,7 @@
 		if (this.acc < 0)
 			this.acc = 0;
 	}
-	
+
 	Neuron.prototype.tryConnect = function(neuronB, network, j, k){
 
 		var n1 = this;
@@ -394,7 +394,7 @@
 		this.poolSize = poolSize;
 		this.pGeom = new THREE.Geometry();
 		this.particles = this.pGeom.vertices;
-		this.freeParticles = []
+		this.availableParticles = []
 
 		this.offScreenPos = new THREE.Vector3(9999, 9999, 9999); // #CM0A r68 PointCloud default frustumCull = true(extended from Object3D), so need to set to 'false' for this to work with oppScreenPos, else particles will dissappear
 
@@ -443,15 +443,15 @@
 	}
 
 	ParticlePool.prototype.getParticle = function() {
-		if (this.freeParticles.length > 0)
-			return this.freeParticles.pop();
+		if (this.availableParticles.length > 0)
+			return this.availableParticles.pop();
 		return null;
 
 	};
 
 	ParticlePool.prototype.free = function(particle){
 		particle.set(this.offScreenPos.x, this.offScreenPos.y, this.offScreenPos.z);
-		this.freeParticles.push(particle);
+		this.availableParticles.push(particle);
 	};
 
 	ParticlePool.prototype.update = function() {
