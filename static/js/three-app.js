@@ -267,7 +267,7 @@
 		this.lastRefilled = currentTime;
 	};
 	Astrocyte.prototype.hasEnergy = function(){
-		if(this.availableEnergy > astrocyte_settings.minEnergy)
+		if(this.availableEnergy >= astrocyte_settings.fireEnergy)
 			return true;
 		else
 			return false;
@@ -1181,7 +1181,8 @@
 
 	var astrocyte_settings = {
 		minEnergy: 0.0, // default min
-		maxEnergy: 0.1, // default max
+		maxEnergy: 1.0, // default max
+		fireEnergy: 0.125, // the amount that depletes on firing
 		replenishEnergy: 0.05, // amount of energy astrocyte regenerates 
 		regenerationTime: 2000, // time needed for energy to regenerate in milliseconds
 		//minThreshold: 0.125, // energy level at which the astrocyte starts regenerating energy
@@ -1222,8 +1223,9 @@
 	gui_info.add(neuralNet, 'numAxons').name('Axons');
 	gui_info.add(neuralNet, 'numSignals', 0, neuralNet.numAxons).name('Signals');
 	gui_info.add(neuralNet, 'numActiveAstrocytes', 0, neuralNet.numActiveAstrocytes).name('Active Astrocytes');
-	gui_info.add(astrocyte_settings, 'minEnergy').name('Min energy');
-	gui_info.add(astrocyte_settings, 'maxEnergy').name('Max energy');
+	gui_info.add(astrocyte_settings, 'minEnergy').name('Pool Min energy');
+	gui_info.add(astrocyte_settings, 'maxEnergy').name('Pool Max energy');
+	gui_info.add(astrocyte_settings, 'fireEnergy').name('Pool Firing Thresh');
 	gui_info.autoListen = false;
 
 	var gui_settings = gui.addFolder('Network Settings');
