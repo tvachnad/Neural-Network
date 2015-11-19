@@ -378,14 +378,18 @@
 		this.poolSize = poolSize;
 		this.pGeom = new THREE.Geometry();
 		this.particles = this.pGeom.vertices;
+		this.freeParticles = []
 
 		this.offScreenPos = new THREE.Vector3(9999, 9999, 9999); // #CM0A r68 PointCloud default frustumCull = true(extended from Object3D), so need to set to 'false' for this to work with oppScreenPos, else particles will dissappear
 
 		this.pColor = 0xff4400;
 		this.pSize = 0.6;
 
+		var particle;
 		for (var ii = 0; ii < this.poolSize; ii++) {
-			this.particles[ii] = new Particle(this);
+			particle = new Particle(this);
+			this.particles[ii] = particle;
+			this.free(particle)
 		}
 
 		// inner particle
@@ -423,16 +427,15 @@
 	}
 
 	ParticlePool.prototype.getParticle = function() {
-
-		for (var ii = 0; ii < this.poolSize; ii++) {
-			var p = this.particles[ii];
-			if (p.available) {
-				p.available = false;
-				return p;
-			}
-		}
+		if (this.freeParticles.length > 0)
+			return this.freeParticles.pop();
 		return null;
 
+	};
+
+	ParticlePool.prototype.free = function(particle){
+		particle.set(this.offScreenPos.x, this.offScreenPos.y, this.offScreenPos.z);
+		this.freeParticles.push(particle);
 	};
 
 	ParticlePool.prototype.update = function() {
@@ -458,16 +461,13 @@
 	function Particle(particlePool) {
 
 		this.particlePool = particlePool;
-		this.free();
 
 	}
 
 	Particle.prototype = Object.create(THREE.Vector3.prototype);
 
 	Particle.prototype.free = function() {
-
-		this.available = true;
-		this.set(this.particlePool.offScreenPos.x, this.particlePool.offScreenPos.y, this.particlePool.offScreenPos.z);
+		this.particlePool.free(this);
 
 	};
 
@@ -1154,7 +1154,7 @@
 	gui_info.add(neuralNet, 'numNeurons').name('Neurons');
 	gui_info.add(neuralNet, 'numNeurons').name('Astrocytes');
 	gui_info.add(neuralNet, 'numAxons').name('Axons');
-	gui_info.add(neuralNet, 'numSignals', 0, neuralNet.limitSignals).name('Signals');
+	gui_info.add(neuralNet, 'numSignals', 0, neuralNet.numAxons).name('Signals');
 	gui_info.add(neuralNet, 'numActiveAstrocytes', 0, neuralNet.numActiveAstrocytes).name('Active Astrocytes');
 	gui_info.add(astrocyte_settings, 'minEnergy').name('Min energy');
 	gui_info.add(astrocyte_settings, 'maxEnergy').name('Max energy');
