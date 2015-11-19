@@ -97,54 +97,40 @@
         	canConnect = true;
         }
 
-        // if (r1 === r2){
-        // 	canConnect = false;
-        // }
-
-		// else if (n1 !== n2 && n1.distanceTo(n2) < network.maxAxonDist &&
-		// 	n1.connection.length < network.maxConnectionPerNeuron &&
-		// 	n2.connection.length < network.maxConnectionPerNeuron ){
-
-		// 	canConnect = true;
-		// }
-		var constring = "";
-		var wstring = "";
+		var ner1 = j+1;
+		var ner2 = k+1;
 		if (canConnect)
 		{
 			var rand = Math.floor( Math.random() * 3 );
 
-			//one directional connection starting from n1
+			//two directional connection
 			if(rand === 0){
 				var connectedAxon = n1.connectNeuronTwoDirection(n2);
-				constring = (j+1).toString().concat(",").concat((k+1)).concat(",1\n");
-				wstring = (j+1).toString().concat(",").concat((k+1)).concat(",");
+				ner1 = j+1;
+				ner2 = k+1;
 			}
 
-		 	//one directional connection starting from n2
+		 	//one directional connection n2 to n1
 			else if(rand === 1){
 				var connectedAxon = n2.connectNeuronOneDirection(n1);
-				constring = (j+1).toString().concat(",").concat((k+1)).concat(",1\n");
-				wstring = (j+1).toString().concat(",").concat((k+1)).concat(",");
+				ner1 = k+1;
+				ner2 = j+1;
 			}
 
-			//two directional connection
+			//one directional connection n1 to n2
 			else if(rand === 2){
 				var connectedAxon = n1.connectNeuronOneDirection(n2);
-				constring = (k+1).toString().concat(",").concat((j+1)).concat(",1\n");
-				wstring = (k+1).toString().concat(",").concat((j+1)).concat(",");
-				
+				ner1 = j+1;
+				ner2 = k+1;
 			}
 			network.constructAxonArrayBuffer(connectedAxon);
 			var rand = (Math.random()*41+80)/100;
 			connectedAxon.weight = rand * (1/connectedAxon.cpLength);
-			wstring = wstring.concat(",")
-			network.connections.push(constring);
-			network.connWeight.push(wstring);
-			if(rand === 0) {
-				constring = (k+1).toString().concat(",").concat((j+1)).concat(",1\n");
-				wstring = (k+1).toString().concat(",").concat((j+1)).concat(",").concat(connectedAxon.weight).concat("\n");
-				network.connections.push(constring);
-				network.connWeight.push(wstring);
+			if(network.logger != null){
+				network.logger.logCon(ner1, ner2, connectedAxon.weight);
+				if(rand === 0) {
+					network.logger.logCon(ner2, ner1, connectedAxon.weight);
+				}	
 			}
 		}
 	}
@@ -517,34 +503,80 @@
 	}
 	
 	// Logger ----------------------------------------------------------------
-	function Logger(url){
-		this.url = url;
-		this.entries = [];
-		this.entries.push("1");
-		this.lastEntry = 0;
-		this.timestep = 1;
+	function Logger(){
+		this.urlFire = "firing";
+		this.urlPot  = "potential";
+		this.urlMiss = "miss";
+		this.urlRep  = "replenish";
+		this.urlCon  = "connection";
+		this.urlConW = "conweights";
+		this.entF = []; //firings
+		this.entP = []; //potential energy
+		this.entM = []; //missed energy
+		this.entR = []; //replenish energy
+		this.entC = []; //connection (binary)
+		this.entW = []; //connection weight
 	}
-	Logger.prototype.addToLastEntry = function(neuron) {
-		var str = ",";
-		str = str.concat(neuron);
-		this.entries[this.lastEntry] = this.entries[this.lastEntry].concat(str);
+	Logger.prototype.logFiring = function(time, neuron, potential){
+		this.entF.push(time.toString() + "," + neuron.toString() + ", 1\n")
+		this.entP.push(time.toString() + "," + neuron.toString() + "," + potential.toString() + "\n")
+		if(this.entF.length >= 20){
+			this.sendToServer(this.entF, this.urlFire);
+			this.sendToServer(this.entP, this.urlPot);
+			this.entF = [];
+			this.entP = [];
+		}
 	}
-	Logger.prototype.getLastEntry = function() {
-		return this.lastEntry;
+	Logger.prototype.logMissEnergy = function(time, neuron, energy){
+		this.entM.push(time.toString() + "," + neuron.toString() + "," + energy.toString() + "\n")
+		if(this.entM.length >= 20){
+			this.sendToServer(this.entM, this.urlMiss);
+			this.entM = [];
+		}
 	}
-	Logger.prototype.newEntry = function(){
-		this.entries[this.lastEntry] = this.entries[this.lastEntry].concat("\n");
-		this.lastEntry = this.lastEntry + 1;
-		this.timestep = this.timestep + 1;
-		this.entries.push(this.timestep.toString());
+	Logger.prototype.logRep = function(time, energy){
+		this.entR.push(time.toString() + "," + energy.toString());
+		if(this.entR.length >= 20){
+			this.sendToServer(this.entR, this.urlRep);
+			this.entR = [];
+		}
 	}
-	Logger.prototype.sendToServer = function(){
-		this.entries[this.lastEntry] = this.entries[this.lastEntry].concat("\n");
+	Logger.prototype.logCon = function(n1, n2, weight){
+		this.entC.push(n1.toString() + "," + n2.toString() + ", 1\n")
+		this.entW.push(n1.toString() + "," + n2.toString() + "," + weight.toString() + "\n")
+		if(this.entC.length >= 1000){
+			this.sendToServer(this.entC, this.urlCon);
+			this.sendToServer(this.entW, this.urlConW);
+			this.entC = [];
+			this.entW = [];
+		}
+	}
+	Logger.prototype.flushFiring = function(){
+		this.sendToServer(this.entF, this.urlFire);
+		this.sendToServer(this.entP, this.urlPot);
+		this.entF = [];
+		this.entP = [];
+	}
+	Logger.prototype.flushMiss = function(){
+		this.sendToServer(this.entM, this.urlMiss);
+		this.entM = [];
+	}
+	Logger.prototype.flushRep = function(){
+		this.sendToServer(this.entR, this.urlRep);
+		this.entR = [];
+	}
+	Logger.prototype.flushCon = function(){
+		this.sendToServer(this.entC, this.urlCon);
+		this.sendToServer(this.entW, this.urlConW);
+		this.entC = [];
+		this.entW = [];
+	}
+	Logger.prototype.sendToServer = function(entries, url){
 		$.ajax({
 		 	type: "POST",
-		 	url: "/"+this.url,
+		 	url: "/"+url,
 		  	contentType: "application/json; charset=utf-8",
-		  	data: JSON.stringify(this.entries),
+		  	data: JSON.stringify(entries),
 		  	dataType: 'json',
 		  	success: function(data) {
 		  		console.log("success");
@@ -553,12 +585,22 @@
 		  		console.log(error);
 		  	}
 		});
-		this.entries.length = 0;
-		this.timestep = this.timestep + 1;
-		this.entries[0] = this.timestep.toString();
-		this.lastEntry = 0;
 	}
-	
+	Logger.prototype.createLogs = function(){
+		$.ajax({
+		 	type: "POST",
+		 	url: "/createLogs",
+		  	contentType: "application/json; charset=utf-8",
+		  	data: JSON.stringify("Create the logs"),
+		  	dataType: 'json',
+		  	success: function(data) {
+		  		console.log("success");
+		  	},
+		  	error: function(error) {
+		  		console.log(error);
+		  	}
+		});
+	}	
 	// Clock -----------------------------------------------------------------
 	function Clock(){
 		this.currentTime = 0;
@@ -583,18 +625,10 @@
 	// Neural Network --------------------------------------------------------
 	function NeuralNetwork() {
 		this.initialized = false;
-		this.logger = null; //firings
-		this.logger2 = null; //membrane potential at firing
-		this.logger3 = null; //the amount of energy in the astrocyte when the neuron would have fired but the astrocyte was short of energy
-		this.logger4 = null; //the amount of replenish energy available when the update happens
-		//this.logger = new Logger("firing");
-		//this.logger2 = new Logger("potential");
-		//this.logger3 = new Logger("miss");
-		//this.logger4 = new Logger("replenish");
+		//this.logger = null; 
+		this.logger = new Logger();
 		this.numberExcite = 0;
 		this.numberInhibit = 0;
-		this.connections = [];
-		this.connWeight = [];
 		
 		// settings
 		this.verticesSkipStep = 1; //2
@@ -699,54 +733,12 @@
 				astrocyte_settings.replenishEnergy = astrocyte_settings.minThreshold;
 				this.regenSign *= -1;
 			}
-			if(this.logger4 != null){
-				this.logger4.addToLastEntry(astrocyte_settings.replenishEnergy);
+			if(this.logger != null){
+				this.logger.logRep(currentTime, astrocyte_settings.replenishEnergy);
 			}
 		}
 	}
-	//function for astrocyte energy regeneration
-	//TODO: somewhat messy needs tiding up
-	/*NeuralNetwork.prototype.regenerationFunction = function() {
-		var sign = 1;
-		var move = function()
-		{
-			astrocyte_settings.replenishEnergy += sign*astrocyte_settings.amplitude;
-			if ((astrocyte_settings.replenishEnergy > astrocyte_settings.maxThreshold) || 
-				(astrocyte_settings.replenishEnergy < astrocyte_settings.minThreshold))
-			{
-				astrocyte_settings.replenishEnergy -= sign*astrocyte_settings.amplitude;
-				sign *= -1;
-				move();
-			}
-		}
-		var regeneration = function() {
-				setTimeout(function() {
-					move();
-					regeneration();
-					//console.log(astrocyte_settings.replenishEnergy);
-				}, astrocyte_settings.frequency);
-			}
-			//console.log("regeneration");
-		regeneration();
 
-	};*/
-
-	//takes away potential firing energy of a neuron if it hasn't recieved any signals for some time
-	/*NeuralNetwork.prototype.decayFunction = function() {
-		var that = this;
-
-		var decay = function() {
-			setTimeout(function() {
-				that.allNeurons.forEach(function(neuron){
-					neuron.decay();
-				})
-				decay();
-			}, network_settings.decayTime);
-		};
-
-		decay();
-
-	};*/
 
 	NeuralNetwork.prototype.constructNeuralNetwork = function(loadedObject){
 		var loadedMesh = loadedObject.children[0];
@@ -772,19 +764,7 @@
 		//this.regenerationFunction();
 		//this.decayFunction();
 		if(this.logger != null){
-			$.ajax({
-			 	type: "POST",
-			 	url: "/createLogs",
-			  	contentType: "application/json; charset=utf-8",
-			  	data: JSON.stringify("Create the logs"),
-			  	dataType: 'json',
-			  	success: function(data) {
-			  		console.log("success");
-			  	},
-			  	error: function(error) {
-			  		console.log(error);
-			  	}
-			});
+			this.logger.createLogs();
 		}
 	}
 	NeuralNetwork.prototype.initNeuralNetwork = function() {
@@ -883,70 +863,11 @@
 					// connect neuron if distance ... and limit connection per neuron to not more than x
 					
 					n1.tryConnect(n2, this, j, k);
-					if(this.logger != null){
-						if(this.connections.length > 1000){
-							$.ajax({
-							 	type: "POST",
-							 	url: "/connection",
-							  	contentType: "application/json; charset=utf-8",
-							  	data: JSON.stringify(this.connections),
-							  	dataType: 'json',
-							  	success: function(data) {
-							  		console.log("success");
-							  	},
-							  	error: function(error) {
-							  		console.log(error);
-							  	}
-							});
-							$.ajax({
-							 	type: "POST",
-							 	url: "/conweights",
-							  	contentType: "application/json; charset=utf-8",
-							  	data: JSON.stringify(this.connWeight),
-							  	dataType: 'json',
-							  	success: function(data) {
-							  		console.log("success");
-							  	},
-							  	error: function(error) {
-							  		console.log(error);
-							  	}
-							});
-						}
-						this.connections = [];
-						this.connWeight = [];
-					}
 				}
 			}
-			if(this.logger != null && this.connections.length > 0){
-				$.ajax({
-				 	type: "POST",
-				 	url: "/connection",
-				  	contentType: "application/json; charset=utf-8",
-				  	data: JSON.stringify(this.connections),
-				  	dataType: 'json',
-				  	success: function(data) {
-				  		console.log("success");
-				  	},
-				  	error: function(error) {
-				  		console.log(error);
-				  	}
-				});
-				$.ajax({
-				 	type: "POST",
-				 	url: "/conweights",
-				  	contentType: "application/json; charset=utf-8",
-				  	data: JSON.stringify(this.connWeight),
-				  	dataType: 'json',
-				  	success: function(data) {
-				  		console.log("success");
-				  	},
-				  	error: function(error) {
-				  		console.log(error);
-				  	}
-				});
-				this.connections = [];
-				this.connWeight = [];
-			}
+			if(this.logger != null){
+				this.logger.flushCon();
+			} 
 						
 			// *** attirbute size must bigger than its content ***
 			var axonIndices = new Uint32Array(this.axonIndices.length);
@@ -1003,10 +924,9 @@
 			var result = n.fireIfCan(this, currentTime);
 			if(this.logger != null){
 				if (result[0] === true) {
-					this.logger.addToLastEntry(ii+1);
-					this.logger2.addToLastEntry(result[1]);					
+					this.logger.logFiring(currentTime, ii+1, result[1]);	
 				} else if (result[1] != null) {
-					this.logger3.addToLastEntry(ii+1, result[1])
+					this.logger.logMiss(currentTime, ii+1, result[1]);
 				}
 			}
 			
@@ -1016,17 +936,9 @@
 			n.replenishAstrocyte(currentTime);
 		}
 		if(this.logger != null){
-			if(this.logger.getLastEntry() >= 19){
-				this.logger.sendToServer();
-				this.logger2.sendToServer();
-				this.logger3.sendToServer();
-				this.logger4.sendToServer();
-			} else {
-				this.logger.newEntry();
-				this.logger2.newEntry();
-				this.logger3.newEntry();
-				this.logger4.newEntry();
-			}
+			this.logger.flushFiring();
+			this.logger.flushMiss();
+			this.logger.flushRep();
 		}
 		// reset all neurons and when there is X signal
 		if (this.allSignals.length <= 0) {

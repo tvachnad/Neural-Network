@@ -2,14 +2,16 @@ import json
 import os, datetime
 from flask import Flask, jsonify, render_template, request
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='./')
 
 class logserver:
 	
 
 	firefile = ""
-	potfile = ""
-	confile = ""
+	potfile  = ""
+	missfile = ""
+	repfile  = ""
+	confile  = ""
 	conwfile = ""
 	
 	def logFiring(self, log):
@@ -20,6 +22,14 @@ class logserver:
 		self.writeLog(self.potfile, log)
 		return "success"
 	
+	def logMiss(self, log):
+		self.writeLog(self.missfile, log)
+		return "success"
+	
+	def logReplenish(self, log):
+		self.writeLog(self.repfile, log)
+		return "success"
+		
 	def logConnection(self, log):
 		self.writeLog(self.confile, log)
 		return "success"
@@ -42,17 +52,25 @@ class logserver:
 		conwpath = os.path.normpath(os.path.join(logpath, 'ConWeights'))
 		firepath = os.path.normpath(os.path.join(logpath, 'Firing'))
 		potpath = os.path.normpath(os.path.join(logpath, 'Potential'))
+		misspath = os.path.normpath(os.path.join(logpath, 'MissEnergy'))
+		reppath = os.path.normpath(os.path.join(logpath, 'ReplenishEnergy'))
 	
 		timestampstr = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 	
 		self.firefile = os.path.join(firepath, timestampstr)
 		self.potfile = os.path.join(potpath, timestampstr)
+		self.missfile = os.path.join(misspath, timestampstr)
+		self.repfile = os.path.join(reppath, timestampstr)
 		self.confile  = os.path.join(conpath, timestampstr)
 		self.conwfile = os.path.join(conwpath, timestampstr)
 
 		lfile = open(self.firefile, 'w')
 		lfile.close()
 		lfile = open(self.potfile, 'w')
+		lfile.close()
+		lfile = open(self.missfile, 'w')
+		lfile.close()
+		lfile = open(self.repfile, 'w')
 		lfile.close()
 		lfile = open(self.confile, 'w')
 		lfile.close()
@@ -64,11 +82,11 @@ class logserver:
 
 logserv = logserver()
 
-@app.route("/")
+@app.route("index.html")
 def index():
 	return render_template('index.html')
 
-@app.route("/purplebrain.html")
+@app.route("purplebrain.html")
 def brain():
 	return render_template('purplebrain.html')
 	
@@ -87,7 +105,13 @@ def logPotential():
 @app.route('/miss', methods=['POST'])
 def logMiss():
 	log = request.get_json()
-	logserv.logPot(log)
+	logserv.logMiss(log)
+	return "success"
+
+@app.route('/replenish', methods=['POST'])
+def logRep():
+	log = request.get_json()
+	logserv.logReplenish(log)
 	return "success"
 	
 @app.route('/connection', methods=['POST'])
@@ -105,6 +129,7 @@ def logWeights():
 @app.route('/createLogs', methods=['POST'])	
 def createLogFiles():		
 	logserv.createNewLogFiles()
+	return "success"
 	
 if __name__ == '__main__':
     logserv.main()
