@@ -87,11 +87,19 @@
 
 		var probFromMatrix = network.connectivityMatrix[r1-1][r2];
         probFromMatrix = Number(probFromMatrix);
-        probFromMatrix = probFromMatrix / 10000;
+        probFromMatrix = probFromMatrix / 5000;
 
-        if(randomForMatrix < probFromMatrix || r1 === r2){
+        if ( r1 ===r2 && n1 !== n2 && n1.distanceTo( n2 ) < network.maxAxonDist) {
         	canConnect = true;
         }
+
+        else if(n1 !== n2 && randomForMatrix < probFromMatrix){
+        	canConnect = true;
+        }
+
+        // if (r1 === r2){
+        // 	canConnect = false;
+        // }
 
 		// else if (n1 !== n2 && n1.distanceTo(n2) < network.maxAxonDist &&
 		// 	n1.connection.length < network.maxConnectionPerNeuron &&
@@ -386,14 +394,18 @@
 		this.poolSize = poolSize;
 		this.pGeom = new THREE.Geometry();
 		this.particles = this.pGeom.vertices;
+		this.availableParticles = []
 
 		this.offScreenPos = new THREE.Vector3(9999, 9999, 9999); // #CM0A r68 PointCloud default frustumCull = true(extended from Object3D), so need to set to 'false' for this to work with oppScreenPos, else particles will dissappear
 
 		this.pColor = 0xff4400;
 		this.pSize = 0.6;
 
+		var particle;
 		for (var ii = 0; ii < this.poolSize; ii++) {
-			this.particles[ii] = new Particle(this);
+			particle = new Particle(this);
+			this.particles[ii] = particle;
+			this.free(particle)
 		}
 
 		// inner particle
@@ -431,16 +443,15 @@
 	}
 
 	ParticlePool.prototype.getParticle = function() {
-
-		for (var ii = 0; ii < this.poolSize; ii++) {
-			var p = this.particles[ii];
-			if (p.available) {
-				p.available = false;
-				return p;
-			}
-		}
+		if (this.availableParticles.length > 0)
+			return this.availableParticles.pop();
 		return null;
 
+	};
+
+	ParticlePool.prototype.free = function(particle){
+		particle.set(this.offScreenPos.x, this.offScreenPos.y, this.offScreenPos.z);
+		this.availableParticles.push(particle);
 	};
 
 	ParticlePool.prototype.update = function() {
@@ -466,16 +477,13 @@
 	function Particle(particlePool) {
 
 		this.particlePool = particlePool;
-		this.free();
 
 	}
 
 	Particle.prototype = Object.create(THREE.Vector3.prototype);
 
 	Particle.prototype.free = function() {
-
-		this.available = true;
-		this.set(this.particlePool.offScreenPos.x, this.particlePool.offScreenPos.y, this.particlePool.offScreenPos.z);
+		this.particlePool.free(this);
 
 	};
 
@@ -485,45 +493,17 @@
 
 		this.weight = 1;
 
-		this.bezierSubdivision = 8;
 		this.neuronA = neuronA;
 		this.neuronB = neuronB;
-		this.cpLength = neuronA.distanceTo(neuronB) / THREE.Math.randFloat(1.5, 4.0);
-		this.controlPointA = this.getControlPoint(neuronA, neuronB);
-		this.controlPointB = this.getControlPoint(neuronB, neuronA);
-		THREE.CubicBezierCurve3.call(this, this.neuronA, this.controlPointA, this.controlPointB, this.neuronB);
+		this.cpLength = neuronA.distanceTo(neuronB);
+		THREE.LineCurve3.call(this, this.neuronA, this.neuronB);
 
 		this.geom = new THREE.Geometry();
-		this.geom.vertices = this.calculateVertices();
+		this.geom.vertices.push(this.neuronA, this.neuronB);
 
 	}
 
-	Axon.prototype = Object.create(THREE.CubicBezierCurve3.prototype);
-
-	Axon.prototype.calculateVertices = function() {
-		return this.getSpacedPoints(this.bezierSubdivision);
-	};
-
-	// generate uniformly distribute vector within x-theta cone from arbitrary vector v1, v2
-	Axon.prototype.getControlPoint = function(v1, v2) {
-
-		var dirVec = new THREE.Vector3().copy(v2).sub(v1).normalize();
-		var northPole = new THREE.Vector3(0, 0, 1); // this is original axis where point get sampled
-		var axis = new THREE.Vector3().crossVectors(northPole, dirVec).normalize(); // get axis of rotation from original axis to dirVec
-		var axisTheta = dirVec.angleTo(northPole); // get angle
-		var rotMat = new THREE.Matrix4().makeRotationAxis(axis, axisTheta); // buildExcitor rotation matrix
-
-		var minz = Math.cos(THREE.Math.degToRad(45)); // cone spread in degrees
-		var z = THREE.Math.randFloat(minz, 1);
-		var theta = THREE.Math.randFloat(0, Math.PI * 2);
-		var r = Math.sqrt(1 - z * z);
-		var cpPos = new THREE.Vector3(r * Math.cos(theta), r * Math.sin(theta), z);
-		cpPos.multiplyScalar(this.cpLength); // length of cpPoint
-		cpPos.applyMatrix4(rotMat); // rotate to dirVec
-		cpPos.add(v1); // translate to v1
-		return cpPos;
-
-	};
+	Axon.prototype = Object.create(THREE.LineCurve3.prototype);
 
 	// Connection ------------------------------------------------------------
 	function Connection(axon, startingPoint) {
@@ -1209,9 +1189,9 @@
 	};
 
 	var network_settings = {
-		firing_threshold: 0.5, // neuron fires when reaching this amount.
-		signal_weight: 0.167, // energy of neuron increases by this amount per signal.
-		AxonDistance: 8, //default
+		firing_threshold: 0.50, // neuron fires when reaching this amount.
+		signal_weight: 0.40, // energy of neuron increases by this amount per signal.
+		AxonDistance: 10, //default
 		//AxonDistanceInhibitor: 4, //default
 		NeuronConnection: 6, //default
 		//NeuronConnectionInhibitor: 20, //default
@@ -1237,7 +1217,7 @@
 	gui_info.add(neuralNet, 'numNeurons').name('Neurons');
 	gui_info.add(neuralNet, 'numNeurons').name('Astrocytes');
 	gui_info.add(neuralNet, 'numAxons').name('Axons');
-	gui_info.add(neuralNet, 'numSignals', 0, neuralNet.limitSignals).name('Signals');
+	gui_info.add(neuralNet, 'numSignals', 0, neuralNet.numAxons).name('Signals');
 	gui_info.add(neuralNet, 'numActiveAstrocytes', 0, neuralNet.numActiveAstrocytes).name('Active Astrocytes');
 	gui_info.add(astrocyte_settings, 'minEnergy').name('Min energy');
 	gui_info.add(astrocyte_settings, 'maxEnergy').name('Max energy');
