@@ -231,8 +231,8 @@
 		} 
 		return ret;
 	}
-	Neuron.prototype.replenishAstrocyte = function(){
-		this.astrocyte.replenish();
+	Neuron.prototype.replenishAstrocyte = function(currentTime){
+		this.astrocyte.replenish(currentTime);
 	}
 	Neuron.prototype.effectiveSignal = function() {
 		return (this.prevReleaseAxon.weight * network_settings.signal_weight);
@@ -252,8 +252,7 @@
 	function Astrocyte() {
 		// replaces the if firedCount < 8
 		this.availableEnergy = astrocyte_settings.maxEnergy;
-		//the time that it was last refilled at. Used to not let it be refilled more often than some time period
-		//this.lastRefilled = 0;
+		this.lastRefilled = 0;
 	}
 
 	// TODO: Get rid of this because we should never have a situation where the astrocyte energy is hard-reset, right?...
@@ -265,11 +264,10 @@
 		else
 			this.availableEnergy += astrocyte_settings.replenishEnergy;
 		//console.log("reset: "+ this.availableEnergy);
-		//this.lastRefilled = currentTime;
-
+		this.lastRefilled = currentTime;
 	};
 	Astrocyte.prototype.hasEnergy = function(){
-		if(this.availableEnergy >= astrocyte_settings.minEnergy)
+		if(this.availableEnergy > astrocyte_settings.minEnergy)
 			return true;
 		else
 			return false;
@@ -280,13 +278,18 @@
 		if (this.availableEnergy <= astrocyte_settings.minEnergy) { // if energy not full, then regenerate more
 			this.availableEnergy = astrocyte_settings.minEnergy
 		}
+		this.lastRefilled = currentTime;
 	};
 
 	//regenerates energy of the astrocyte in a certain time period that can be set in the settings
-	Astrocyte.prototype.replenish = function() {
-		this.availableEnergy += astrocyte_settings.replenishEnergy;
-		if(this.availableEnergy > astrocyte_settings.maxEnergy){
-			this.availableEnergy = astrocyte_settings.maxEnergy;
+	Astrocyte.prototype.replenish = function(currentTime) {
+		if (currentTime - this.lastRefilled> astrocyte_settings.regenerationTime)
+		{
+			this.availableEnergy += astrocyte_settings.replenishEnergy;
+			if(this.availableEnergy > astrocyte_settings.maxEnergy){
+				this.availableEnergy = astrocyte_settings.maxEnergy;
+			}
+			this.lastRefilled = currentTime;
 		}
 	};
 
@@ -1010,7 +1013,7 @@
 		}
 		for (ii = 0; ii < this.allNeurons.length; ii++) {
 			n = this.allNeurons[ii];
-			n.replenishAstrocyte();
+			n.replenishAstrocyte(currentTime);
 		}
 		if(this.logger != null){
 			if(this.logger.getLastEntry() >= 19){
