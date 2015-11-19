@@ -87,11 +87,19 @@
 
 		var probFromMatrix = network.connectivityMatrix[r1-1][r2];
         probFromMatrix = Number(probFromMatrix);
-        probFromMatrix = probFromMatrix / 10000;
+        probFromMatrix = probFromMatrix / 5000;
 
-        if(randomForMatrix < probFromMatrix || r1 === r2){
+        if ( r1 ===r2 && n1 !== n2 && n1.distanceTo( n2 ) < network.maxAxonDist) {
         	canConnect = true;
         }
+
+        else if(n1 !== n2 && randomForMatrix < probFromMatrix){
+        	canConnect = true;
+        }
+
+        // if (r1 === r2){
+        // 	canConnect = false;
+        // }
 
 		// else if (n1 !== n2 && n1.distanceTo(n2) < network.maxAxonDist &&
 		// 	n1.connection.length < network.maxConnectionPerNeuron &&
@@ -1128,9 +1136,9 @@
 	};
 
 	var network_settings = {
-		firing_threshold: 0.5, // neuron fires when reaching this amount.
-		signal_weight: 0.167, // energy of neuron increases by this amount per signal.
-		AxonDistance: 8, //default
+		firing_threshold: 0.50, // neuron fires when reaching this amount.
+		signal_weight: 0.40, // energy of neuron increases by this amount per signal.
+		AxonDistance: 10, //default
 		//AxonDistanceInhibitor: 4, //default
 		NeuronConnection: 6, //default
 		//NeuronConnectionInhibitor: 20, //default
