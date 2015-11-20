@@ -579,7 +579,7 @@
 		  	data: JSON.stringify(entries),
 		  	dataType: 'json',
 		  	success: function(data) {
-		  		console.log("success");
+//		  		console.log("success");
 		  	},
 		  	error: function(error) {
 		  		console.log(error);
@@ -594,7 +594,7 @@
 		  	data: JSON.stringify("Create the logs"),
 		  	dataType: 'json',
 		  	success: function(data) {
-		  		console.log("success");
+//		  		console.log("success");
 		  	},
 		  	error: function(error) {
 		  		console.log(error);
