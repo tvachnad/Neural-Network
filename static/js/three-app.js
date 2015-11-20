@@ -581,9 +581,9 @@
 		  	success: function(data) {
 		  		console.log("success");
 		  	},
-		  	//error: function(error) {
-		  	//	console.log(error);
-		  	//}
+		  	error: function(error) {
+		  		console.log(error);
+		  	}
 		});
 	}
 	Logger.prototype.createLogs = function(){
