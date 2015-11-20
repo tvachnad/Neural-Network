@@ -926,7 +926,7 @@
 				if (result[0] === true) {
 					this.logger.logFiring(currentTime, ii+1, result[1]);	
 				} else if (result[1] != null) {
-					this.logger.logMiss(currentTime, ii+1, result[1]);
+					this.logger.logMissEnergy(currentTime, ii+1, result[1]);
 				}
 			}
 			
