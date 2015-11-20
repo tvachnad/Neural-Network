@@ -520,7 +520,7 @@
 	Logger.prototype.logFiring = function(time, neuron, potential){
 		this.entF.push(time.toString() + "," + neuron.toString() + ", 1\n")
 		this.entP.push(time.toString() + "," + neuron.toString() + "," + potential.toString() + "\n")
-		if(this.entF.length >= 20){
+		if(this.entF.length >= 1000){
 			this.sendToServer(this.entF, this.urlFire);
 			this.sendToServer(this.entP, this.urlPot);
 			this.entF = [];
@@ -529,14 +529,14 @@
 	}
 	Logger.prototype.logMissEnergy = function(time, neuron, energy){
 		this.entM.push(time.toString() + "," + neuron.toString() + "," + energy.toString() + "\n")
-		if(this.entM.length >= 20){
+		if(this.entM.length >= 1000){
 			this.sendToServer(this.entM, this.urlMiss);
 			this.entM = [];
 		}
 	}
 	Logger.prototype.logRep = function(time, energy){
 		this.entR.push(time.toString() + "," + energy.toString());
-		if(this.entR.length >= 20){
+		if(this.entR.length >= 200){
 			this.sendToServer(this.entR, this.urlRep);
 			this.entR = [];
 		}
@@ -581,9 +581,9 @@
 		  	success: function(data) {
 		  		console.log("success");
 		  	},
-		  	error: function(error) {
-		  		console.log(error);
-		  	}
+		  	//error: function(error) {
+		  	//	console.log(error);
+		  	//}
 		});
 	}
 	Logger.prototype.createLogs = function(){
@@ -763,16 +763,17 @@
 		document.getElementById('loading').style.display = 'none'; // hide loading animation when finish loading model
 		//this.regenerationFunction();
 		//this.decayFunction();
-		if(this.logger != null){
-			this.logger.createLogs();
-		}
+
 	}
 	NeuralNetwork.prototype.initNeuralNetwork = function() {
 
 		// obj loader
 		var self = this;
 		var loader = new THREE.OBJLoader();
-
+		
+		if(this.logger != null){
+			this.logger.createLogs();
+		}
 		//load connectivity matrix
 		d3.csv("./static/models/connectivity.csv", function(data) {
 	  		for(var q = 0;q<188;q++){
@@ -926,7 +927,7 @@
 				if (result[0] === true) {
 					this.logger.logFiring(currentTime, ii+1, result[1]);	
 				} else if (result[1] != null) {
-					this.logger.logMiss(currentTime, ii+1, result[1]);
+					this.logger.logMissEnergy(currentTime, ii+1, result[1]);
 				}
 			}
 			
@@ -936,9 +937,12 @@
 			n.replenishAstrocyte(currentTime);
 		}
 		if(this.logger != null){
-			this.logger.flushFiring();
-			this.logger.flushMiss();
-			this.logger.flushRep();
+			if(this.logger.entF.length >= 1000 || this.logger.entM.length >= 1000){
+				this.logger.flushFiring();
+				this.logger.flushMiss();
+				//this.logger.flushRep();
+			}
+			
 		}
 		// reset all neurons and when there is X signal
 		if (this.allSignals.length <= 0) {
