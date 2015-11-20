@@ -54,6 +54,10 @@ class logserver:
 		potpath = os.path.normpath(os.path.join(logpath, 'Potential'))
 		misspath = os.path.normpath(os.path.join(logpath, 'MissEnergy'))
 		reppath = os.path.normpath(os.path.join(logpath, 'ReplenishEnergy'))
+
+		for dir in [conpath, conwpath, firepath, potpath, misspath, reppath]:
+			if not os.path.exists(dir):
+				os.makedirs(dir)
 	
 		timestampstr = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 	
