@@ -1096,7 +1096,7 @@
 		maxEnergy: 1.0, // default max
 		fireEnergy: 0.125, // the amount that depletes on firing
 		replenishEnergy: 0.05, // amount of energy astrocyte regenerates 
-		regenerationTime: 2000, // time needed for energy to regenerate in milliseconds
+		regenerationTime: 20, // time needed for energy to regenerate in milliseconds
 		//minThreshold: 0.125, // energy level at which the astrocyte starts regenerating energy
 		minThreshold: 0.02, //
 		maxThreshold: 0.08, //
@@ -1154,10 +1154,10 @@
 	var gui_settings = gui.addFolder('Astrocyte Settings');
 	//gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Threshold for energy regeneration');
 	gui_settings.add(astrocyte_settings, 'replenishEnergy', 0, 1).name('Replenish energy amount').listen();
-	gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 10000).name('Energy regeneration time in ms');
+	gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 500).name('Energy regeneration time in ms');
 	gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Minimum Threshold');
 	gui_settings.add(astrocyte_settings, 'maxThreshold', 0, 1).name('Maximum Threshold');
-	gui_settings.add(astrocyte_settings, 'frequency', 0, 2000).name('frequency for change in energy in ms');
+	gui_settings.add(astrocyte_settings, 'frequency', 0, 1000).name('frequency for change in energy in ms');
 	gui_settings.add(astrocyte_settings, 'amplitude', 0, 1).name('Amplitude');
 	gui_settings.open();
 

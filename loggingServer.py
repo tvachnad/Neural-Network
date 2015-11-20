@@ -82,13 +82,13 @@ class logserver:
 
 logserv = logserver()
 
-@app.route("index.html")
+@app.route("/")
 def index():
-	return render_template('index.html')
+	return render_template('./index.html')
 
-@app.route("purplebrain.html")
+@app.route("/purplebrain.html")
 def brain():
-	return render_template('purplebrain.html')
+	return render_template('./purplebrain.html')
 	
 @app.route('/firing', methods=['POST'])
 def logFiring():
