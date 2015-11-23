@@ -3,7 +3,8 @@
 
 	// Constants -------------------------------------------------------------
 	var counter1 = 0;
-	var counter2 = 0;
+	var counter2 = 0;	
+	var time = new THREE.Clock();
 
 	const EXCITOR = 0;
 	const INHIBITOR = 1;
@@ -1073,9 +1074,8 @@
 	// ---- camera
 	camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
 	// camera orbit control
-	cameraCtrl = new THREE.OrbitControls(camera, container);
-	cameraCtrl.object.position.y = 150;
-	cameraCtrl.update();
+	cameraCtrl = new THREE.TrackballControls(camera);
+	cameraCtrl.object.position.z = 150;
 
 	// ---- renderer
 	renderer = new THREE.WebGLRenderer({
@@ -1205,8 +1205,7 @@
 	}
 
 	// ---------- end GUI ----------
-
-
+	
 	(function run() {
 
 
@@ -1219,8 +1218,10 @@
 			updateGuiInfo();
 
 		}
-
-		renderer.render(scene, camera);
+		//var delta = time.getDelta();
+		cameraCtrl.update();
+		renderer.render( scene, camera );
+		
 		stats.update();
 
 	})();
