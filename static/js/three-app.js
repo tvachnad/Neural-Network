@@ -2,9 +2,6 @@
 	"use strict";
 
 	// Constants -------------------------------------------------------------
-	var counter1 = 0;
-	var counter2 = 0;	
-	var time = new THREE.Clock();
 
 	const EXCITOR = 0;
 	const INHIBITOR = 1;
