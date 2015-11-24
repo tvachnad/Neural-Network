@@ -2,8 +2,6 @@
 	"use strict";
 
 	// Constants -------------------------------------------------------------
-	var counter1 = 0;
-	var counter2 = 0;
 
 	const EXCITOR = 0;
 	const INHIBITOR = 1;
@@ -26,7 +24,7 @@
 		this.fired = false;
 		this.firedCount = 0;
 		this.prevReleaseAxon = null;
-
+		this.refactoryPeriod = 10;
 		this.xPos = x;
 		this.yPos = y;
 		this.zPos = z;
@@ -87,56 +85,50 @@
 
 		var probFromMatrix = network.connectivityMatrix[r1-1][r2];
         probFromMatrix = Number(probFromMatrix);
-        probFromMatrix = probFromMatrix / 10000;
+        probFromMatrix = probFromMatrix / 5000;
 
-        if(randomForMatrix < probFromMatrix || r1 === r2){
+        if ( r1 ===r2 && n1 !== n2 && n1.distanceTo( n2 ) < network.maxAxonDist) {
         	canConnect = true;
         }
 
-		// else if (n1 !== n2 && n1.distanceTo(n2) < network.maxAxonDist &&
-		// 	n1.connection.length < network.maxConnectionPerNeuron &&
-		// 	n2.connection.length < network.maxConnectionPerNeuron ){
+        else if(n1 !== n2 && randomForMatrix < probFromMatrix){
+        	canConnect = true;
+        }
 
-		// 	canConnect = true;
-		// }
-		var constring = "";
-		var wstring = "";
+		var ner1 = j+1;
+		var ner2 = k+1;
 		if (canConnect)
 		{
 			var rand = Math.floor( Math.random() * 3 );
 
-			//one directional connection starting from n1
+			//two directional connection
 			if(rand === 0){
 				var connectedAxon = n1.connectNeuronTwoDirection(n2);
-				constring = (j+1).toString().concat(",").concat((k+1)).concat(",1\n");
-				wstring = (j+1).toString().concat(",").concat((k+1)).concat(",");
+				ner1 = j+1;
+				ner2 = k+1;
 			}
 
-		 	//one directional connection starting from n2
+		 	//one directional connection n2 to n1
 			else if(rand === 1){
 				var connectedAxon = n2.connectNeuronOneDirection(n1);
-				constring = (j+1).toString().concat(",").concat((k+1)).concat(",1\n");
-				wstring = (j+1).toString().concat(",").concat((k+1)).concat(",");
+				ner1 = k+1;
+				ner2 = j+1;
 			}
 
-			//two directional connection
+			//one directional connection n1 to n2
 			else if(rand === 2){
 				var connectedAxon = n1.connectNeuronOneDirection(n2);
-				constring = (k+1).toString().concat(",").concat((j+1)).concat(",1\n");
-				wstring = (k+1).toString().concat(",").concat((j+1)).concat(",");
-				
+				ner1 = j+1;
+				ner2 = k+1;
 			}
 			network.constructAxonArrayBuffer(connectedAxon);
 			var rand = (Math.random()*41+80)/100;
 			connectedAxon.weight = rand * (1/connectedAxon.cpLength);
-			wstring = wstring.concat(",")
-			network.connections.push(constring);
-			network.connWeight.push(wstring);
-			if(rand === 0) {
-				constring = (k+1).toString().concat(",").concat((j+1)).concat(",1\n");
-				wstring = (k+1).toString().concat(",").concat((j+1)).concat(",").concat(connectedAxon.weight).concat("\n");
-				network.connections.push(constring);
-				network.connWeight.push(wstring);
+			if(network.logger != null){
+				network.logger.logCon(ner1, ner2, connectedAxon.weight);
+				if(rand === 0) {
+					network.logger.logCon(ner2, ner1, connectedAxon.weight);
+				}	
 			}
 		}
 	}
@@ -159,30 +151,73 @@
 
 
 	//returns active astrocyte, it's taking energy from
-	Neuron.prototype.canFire = function(neighbors) {
+	Neuron.prototype.astrocyteWithEnergy = function(neighbors) {
 		neighbors = typeof neighbors !== 'undefined' ? neighbors : true;
-		if (this.acc >= network_settings.firing_threshold) {
-			var total = this.neurons.length;
-			//console.log(" i"+this.neurons.length);
-			var activeAstrocyte = null;
-			// see if the astrocyte directly linked to this neuron has the energy needed to fire
-			if (this.astrocyte.availableEnergy > astrocyte_settings.minEnergy) {
-				return this.astrocyte;
-			}
+		var total = this.neurons.length;
+		//console.log(" i"+this.neurons.length);
+		var activeAstrocyte = null;
+		// see if the astrocyte directly linked to this neuron has the energy needed to fire
+		if (this.astrocyte.hasEnergy() === true) {
+			return this.astrocyte;
+		}
 
-			// if we get here, the directly linked astrocyte did not have enough energy
-			// check the astrocytes of surrounding neurons to see if they have enough energy
-			if (neighbors) 
-				for (var i = 0; i < total; i++) {
-					var astrocyte = this.neurons[i].canFire(false)
-					if (astrocyte)
-						return astrocyte;
-				}
+		// if we get here, the directly linked astrocyte did not have enough energy
+		// check the astrocytes of surrounding neurons to see if they have enough energy
+		if (neighbors){ 
+			for (var i = 0; i < total; i++) {
+				var astrocyte = this.neurons[i].astrocyteWithEnergy(false);
+				if (astrocyte == null)
+					return astrocyte;
+			}
 		}
 		return null;
 
 	};
-
+	Neuron.prototype.willFire = function(currentTime)
+	{
+		var timeSinceLastFiring = currentTime - this.lastSignalRelease; // used to check if in refactory period
+		if (timeSinceLastFiring >= this.refactoryPeriod && //past refactory period
+			this.acc >= network_settings.firing_threshold) //has to be past the threshold to consider firing
+				return Math.random() < this.acc;
+		else 
+			return false;
+	}
+	//neuron firing function with probability of firing equal to the energy level
+	Neuron.prototype.fire = function() {
+		this.fired = true;
+		this.acc = 0.125;//this.acc - 0.125; // resets energy of neuron
+		// decrease energy level of astrocyte responsible for 
+		// giving the neuron the energy it needed to fire
+		this.releaseDelay = THREE.Math.randInt(100, 1000);
+	};
+	
+	Neuron.prototype.fireIfCan = function(neuralNet, currentTime)
+	{
+		var ret = [false, null];
+		if (this.willFire(currentTime))
+		{
+			if (this.receivedSignal) {
+				var astrocyte = this.astrocyteWithEnergy();
+				if (astrocyte != null) { // Astrocyte mode
+					var prevacc = this.acc;
+					this.fire();
+					ret = [true, prevacc]
+					astrocyte.deplete(currentTime);
+					this.lastSignalRelease = currentTime;
+					neuralNet.releaseSignalAt(this);
+				} else {
+					ret = [false, this.astrocyte.availableEnergy];
+				}
+				this.receivedSignal = false; // if neuron received signal but still in delay reset it
+			} else {
+				this.decay();
+			}
+		} 
+		return ret;
+	}
+	Neuron.prototype.replenishAstrocyte = function(currentTime){
+		this.astrocyte.replenish(currentTime);
+	}
 	Neuron.prototype.effectiveSignal = function() {
 		return (this.prevReleaseAxon.weight * network_settings.signal_weight);
 	}
@@ -197,58 +232,49 @@
 		this.acc = Math.max(0, this.acc - this.effectiveSignal());
 	};
 
-	//neuron firing function with probability of firing equal to the energy level
-	Neuron.prototype.fire = function() {
-		var rand = Math.random();
-		if (rand < this.acc) {
-			this.fired = true;
-			this.acc = this.acc - 0.125; // resets energy of neuron
-			// decrease energy level of astrocyte responsible for 
-			// giving the neuron the energy it needed to fire
-			this.releaseDelay = THREE.Math.randInt(100, 1000);
-			return true;
-		} else {
-			return false; // didn't fire
-		}
-
-	};
-
 	// Astrocyte -------------------------------------------------------------
 	function Astrocyte() {
 		// replaces the if firedCount < 8
 		this.availableEnergy = astrocyte_settings.maxEnergy;
-		// currently this value is not being used but it allows room for future expansion
-		this.lastUsed = 0;
+		this.lastRefilled = 0;
 	}
 
 	// TODO: Get rid of this because we should never have a situation where the astrocyte energy is hard-reset, right?...
 	// Astrocytes should just regenerate energy at a constant rate and neurons pull from it if it's there and they need it...
-	Astrocyte.prototype.resetEnergy = function() {
+	Astrocyte.prototype.resetEnergy = function(currentTime) {
 		//this.availableEnergy = THREE.Math.randInt(astrocyte_settings.minEnergy, astrocyte_settings.maxEnergy);
 		if (this.availableEnergy + astrocyte_settings.replenishEnergy > astrocyte_settings.maxEnergy)
 			this.availableEnergy = astrocyte_settings.maxEnergy;
 		else
 			this.availableEnergy += astrocyte_settings.replenishEnergy;
 		//console.log("reset: "+ this.availableEnergy);
-
+		this.lastRefilled = currentTime;
 	};
-
+	Astrocyte.prototype.hasEnergy = function(){
+		if(this.availableEnergy >= astrocyte_settings.fireEnergy)
+			return true;
+		else
+			return false;
+	}
 	//depletes energy from the astrocyte when the neuron fires
-	Astrocyte.prototype.deplete = function() {
+	Astrocyte.prototype.deplete = function(currentTime) {
 		this.availableEnergy -= 0.125; //energy needed to fire a signal default: 1/8
-		if (this.availableEnergy <= astrocyte_settings.maxEnergy) { // if energy not full, then regenerate more
-			// make it take 5 iterations to be ready again
-			this.lastUsed = 100;
-			this.replenish();
+		if (this.availableEnergy <= astrocyte_settings.minEnergy) { // if energy not full, then regenerate more
+			this.availableEnergy = astrocyte_settings.minEnergy
 		}
+		this.lastRefilled = currentTime;
 	};
 
 	//regenerates energy of the astrocyte in a certain time period that can be set in the settings
-	Astrocyte.prototype.replenish = function() {
-		var that = this;
-		setInterval(function() {
-			that.resetEnergy();
-		}, astrocyte_settings.regenerationTime);
+	Astrocyte.prototype.replenish = function(currentTime) {
+		if (currentTime - this.lastRefilled> astrocyte_settings.regenerationTime)
+		{
+			this.availableEnergy += astrocyte_settings.replenishEnergy;
+			if(this.availableEnergy > astrocyte_settings.maxEnergy){
+				this.availableEnergy = astrocyte_settings.maxEnergy;
+			}
+			this.lastRefilled = currentTime;
+		}
 	};
 
 
@@ -301,7 +327,10 @@
 
 	Signal.prototype.freeParticle = function(){
 		if (this.particle != null)
+		{
 			this.particle.free();
+			this.particle = null;
+		}
 	}				
 
 	Signal.prototype.travel = function() {
@@ -352,14 +381,18 @@
 		this.poolSize = poolSize;
 		this.pGeom = new THREE.Geometry();
 		this.particles = this.pGeom.vertices;
+		this.availableParticles = []
 
 		this.offScreenPos = new THREE.Vector3(9999, 9999, 9999); // #CM0A r68 PointCloud default frustumCull = true(extended from Object3D), so need to set to 'false' for this to work with oppScreenPos, else particles will dissappear
 
 		this.pColor = 0xff4400;
 		this.pSize = 0.6;
 
+		var particle;
 		for (var ii = 0; ii < this.poolSize; ii++) {
-			this.particles[ii] = new Particle(this);
+			particle = new Particle(this);
+			this.particles[ii] = particle;
+			this.free(particle)
 		}
 
 		// inner particle
@@ -397,16 +430,15 @@
 	}
 
 	ParticlePool.prototype.getParticle = function() {
-
-		for (var ii = 0; ii < this.poolSize; ii++) {
-			var p = this.particles[ii];
-			if (p.available) {
-				p.available = false;
-				return p;
-			}
-		}
+		if (this.availableParticles.length > 0)
+			return this.availableParticles.pop();
 		return null;
 
+	};
+
+	ParticlePool.prototype.free = function(particle){
+		particle.set(this.offScreenPos.x, this.offScreenPos.y, this.offScreenPos.z);
+		this.availableParticles.push(particle);
 	};
 
 	ParticlePool.prototype.update = function() {
@@ -432,16 +464,13 @@
 	function Particle(particlePool) {
 
 		this.particlePool = particlePool;
-		this.free();
 
 	}
 
 	Particle.prototype = Object.create(THREE.Vector3.prototype);
 
 	Particle.prototype.free = function() {
-
-		this.available = true;
-		this.set(this.particlePool.offScreenPos.x, this.particlePool.offScreenPos.y, this.particlePool.offScreenPos.z);
+		this.particlePool.free(this);
 
 	};
 
@@ -451,45 +480,17 @@
 
 		this.weight = 1;
 
-		this.bezierSubdivision = 8;
 		this.neuronA = neuronA;
 		this.neuronB = neuronB;
-		this.cpLength = neuronA.distanceTo(neuronB) / THREE.Math.randFloat(1.5, 4.0);
-		this.controlPointA = this.getControlPoint(neuronA, neuronB);
-		this.controlPointB = this.getControlPoint(neuronB, neuronA);
-		THREE.CubicBezierCurve3.call(this, this.neuronA, this.controlPointA, this.controlPointB, this.neuronB);
+		this.cpLength = neuronA.distanceTo(neuronB);
+		THREE.LineCurve3.call(this, this.neuronA, this.neuronB);
 
 		this.geom = new THREE.Geometry();
-		this.geom.vertices = this.calculateVertices();
+		this.geom.vertices.push(this.neuronA, this.neuronB);
 
 	}
 
-	Axon.prototype = Object.create(THREE.CubicBezierCurve3.prototype);
-
-	Axon.prototype.calculateVertices = function() {
-		return this.getSpacedPoints(this.bezierSubdivision);
-	};
-
-	// generate uniformly distribute vector within x-theta cone from arbitrary vector v1, v2
-	Axon.prototype.getControlPoint = function(v1, v2) {
-
-		var dirVec = new THREE.Vector3().copy(v2).sub(v1).normalize();
-		var northPole = new THREE.Vector3(0, 0, 1); // this is original axis where point get sampled
-		var axis = new THREE.Vector3().crossVectors(northPole, dirVec).normalize(); // get axis of rotation from original axis to dirVec
-		var axisTheta = dirVec.angleTo(northPole); // get angle
-		var rotMat = new THREE.Matrix4().makeRotationAxis(axis, axisTheta); // buildExcitor rotation matrix
-
-		var minz = Math.cos(THREE.Math.degToRad(45)); // cone spread in degrees
-		var z = THREE.Math.randFloat(minz, 1);
-		var theta = THREE.Math.randFloat(0, Math.PI * 2);
-		var r = Math.sqrt(1 - z * z);
-		var cpPos = new THREE.Vector3(r * Math.cos(theta), r * Math.sin(theta), z);
-		cpPos.multiplyScalar(this.cpLength); // length of cpPoint
-		cpPos.applyMatrix4(rotMat); // rotate to dirVec
-		cpPos.add(v1); // translate to v1
-		return cpPos;
-
-	};
+	Axon.prototype = Object.create(THREE.LineCurve3.prototype);
 
 	// Connection ------------------------------------------------------------
 	function Connection(axon, startingPoint) {
@@ -500,60 +501,132 @@
 	}
 	
 	// Logger ----------------------------------------------------------------
-	function Logger(url){
-		this.url = url;
-		this.entries = [];
-		this.entries.push("1");
-		this.lastEntry = 0;
-		this.timestep = 1;
+	function Logger(){
+		this.urlFire = "firing";
+		this.urlPot  = "potential";
+		this.urlMiss = "miss";
+		this.urlRep  = "replenish";
+		this.urlCon  = "connection";
+		this.urlConW = "conweights";
+		this.entF = []; //firings
+		this.entP = []; //potential energy
+		this.entM = []; //missed energy
+		this.entR = []; //replenish energy
+		this.entC = []; //connection (binary)
+		this.entW = []; //connection weight
 	}
-	Logger.prototype.addToLastEntry = function(neuron) {
-		var str = ",";
-		str = str.concat(neuron);
-		this.entries[this.lastEntry] = this.entries[this.lastEntry].concat(str);
+	Logger.prototype.logFiring = function(time, neuron, potential){
+		this.entF.push(time.toString() + "," + neuron.toString() + ", 1\n")
+		this.entP.push(time.toString() + "," + neuron.toString() + "," + potential.toString() + "\n")
+		if(this.entF.length >= 1000){
+			this.sendToServer(this.entF, this.urlFire);
+			this.sendToServer(this.entP, this.urlPot);
+			this.entF = [];
+			this.entP = [];
+		}
 	}
-	Logger.prototype.getLastEntry = function() {
-		return this.lastEntry;
+	Logger.prototype.logMissEnergy = function(time, neuron, energy){
+		this.entM.push(time.toString() + "," + neuron.toString() + "," + energy.toString() + "\n")
+		if(this.entM.length >= 1000){
+			this.sendToServer(this.entM, this.urlMiss);
+			this.entM = [];
+		}
 	}
-	Logger.prototype.newEntry = function(){
-		this.entries[this.lastEntry] = this.entries[this.lastEntry].concat("\n");
-		this.lastEntry = this.lastEntry + 1;
-		this.timestep = this.timestep + 1;
-		this.entries.push(this.timestep.toString());
+	Logger.prototype.logRep = function(time, energy){
+		this.entR.push(time.toString() + "," + energy.toString());
+		if(this.entR.length >= 200){
+			this.sendToServer(this.entR, this.urlRep);
+			this.entR = [];
+		}
 	}
-	Logger.prototype.sendToServer = function(){
-		this.entries[this.lastEntry] = this.entries[this.lastEntry].concat("\n");
+	Logger.prototype.logCon = function(n1, n2, weight){
+		this.entC.push(n1.toString() + "," + n2.toString() + ", 1\n")
+		this.entW.push(n1.toString() + "," + n2.toString() + "," + weight.toString() + "\n")
+		if(this.entC.length >= 1000){
+			this.sendToServer(this.entC, this.urlCon);
+			this.sendToServer(this.entW, this.urlConW);
+			this.entC = [];
+			this.entW = [];
+		}
+	}
+	Logger.prototype.flushFiring = function(){
+		this.sendToServer(this.entF, this.urlFire);
+		this.sendToServer(this.entP, this.urlPot);
+		this.entF = [];
+		this.entP = [];
+	}
+	Logger.prototype.flushMiss = function(){
+		this.sendToServer(this.entM, this.urlMiss);
+		this.entM = [];
+	}
+	Logger.prototype.flushRep = function(){
+		this.sendToServer(this.entR, this.urlRep);
+		this.entR = [];
+	}
+	Logger.prototype.flushCon = function(){
+		this.sendToServer(this.entC, this.urlCon);
+		this.sendToServer(this.entW, this.urlConW);
+		this.entC = [];
+		this.entW = [];
+	}
+	Logger.prototype.sendToServer = function(entries, url){
 		$.ajax({
 		 	type: "POST",
-		 	url: "/"+this.url,
+		 	url: "/"+url,
 		  	contentType: "application/json; charset=utf-8",
-		  	data: JSON.stringify(this.entries),
+		  	data: JSON.stringify(entries),
 		  	dataType: 'json',
 		  	success: function(data) {
-		  		console.log("success");
+//		  		console.log("success");
 		  	},
 		  	error: function(error) {
 		  		console.log(error);
 		  	}
 		});
-		this.entries.length = 0;
-		this.timestep = this.timestep + 1;
-		this.entries[0] = this.timestep.toString();
-		this.lastEntry = 0;
 	}
+	Logger.prototype.createLogs = function(){
+		$.ajax({
+		 	type: "POST",
+		 	url: "/createLogs",
+		  	contentType: "application/json; charset=utf-8",
+		  	data: JSON.stringify("Create the logs"),
+		  	dataType: 'json',
+		  	success: function(data) {
+//		  		console.log("success");
+		  	},
+		  	error: function(error) {
+		  		console.log(error);
+		  	}
+		});
+	}	
+	// Clock -----------------------------------------------------------------
+	function Clock(){
+		this.currentTime = 0;
+		this.stepSize = 1; //1 millisecond
+	}
+	
+	Clock.prototype.time = function(){
+		return this.currentTime;
+	}
+	Clock.prototype.getStepSize = function(){
+		return this.stepSize();
+	}
+	Clock.prototype.reset = function(){
+		this.currentTime = 0;
+	}
+	Clock.prototype.inc = function(steps){
+		this.currentTime = this.currentTime + this.stepSize * steps;
+	}
+	
+	
+	
 	// Neural Network --------------------------------------------------------
-
 	function NeuralNetwork() {
-
 		this.initialized = false;
-		this.logger = null;
-		this.logger2 = null;
-		//this.logger = new Logger("firing");
-		//this.logger2 = new Logger("potential");
+		//this.logger = null; 
+		this.logger = new Logger();
 		this.numberExcite = 0;
 		this.numberInhibit = 0;
-		this.connections = [];
-		this.connWeight = [];
 		
 		// settings
 		this.verticesSkipStep = 1; //2
@@ -565,7 +638,7 @@
 		this.firing_threshold = network_settings.firing_threshold; // threshold to fire signal (not used yet)
 
 		this.currentMaxSignals = 8000;
-		this.limitSignals = 12000;
+		this.limitSignals = 200000;
 		this.particlePool = new ParticlePool(this.limitSignals); // *************** ParticlePool must bigger than limit Signal ************
 
 		this.signalMinSpeed = 0.035;
@@ -636,7 +709,8 @@
 		this.numSignals = 0;
 		// probably shouldn't be hardcoded
 		this.numActiveAstrocytes = 7241;
-
+		this.regenSign = 1;
+		this.lastRegenUpdate = 0;
 		//connectivity matrix between different regions
 		this.connectivityMatrix =[];
 
@@ -645,111 +719,69 @@
 
 
 	}
-
-	//function for astrocyte energy regeneration
-	//TODO: somewhat messy needs tiding up
-	NeuralNetwork.prototype.regenerationFunction = function() {
-		var sign = 1;
-		var move = function()
-		{
-			astrocyte_settings.replenishEnergy += sign*astrocyte_settings.amplitude;
-			if ((astrocyte_settings.replenishEnergy > astrocyte_settings.maxThreshold) || 
-				(astrocyte_settings.replenishEnergy < astrocyte_settings.minThreshold))
-			{
-				astrocyte_settings.replenishEnergy -= sign*astrocyte_settings.amplitude;
-				sign *= -1;
-				move();
+	NeuralNetwork.prototype.updateRegeneration = function(currentTime) {
+		var timeSinceLastUpdate = currentTime - this.lastRegenUpdate;
+		if(timeSinceLastUpdate >= astrocyte_settings.frequency){
+			astrocyte_settings.replenishEnergy += this.regenSign*astrocyte_settings.amplitude;
+			this.lastRegenUpdate = currentTime;
+			if(astrocyte_settings.replenishEnergy > astrocyte_settings.maxThreshold){
+				astrocyte_settings.replenishEnergy = astrocyte_settings.maxThreshold; 
+				this.regenSign *= -1;
+			} else if(astrocyte_settings.replenishEnergy < astrocyte_settings.minThreshold){
+				astrocyte_settings.replenishEnergy = astrocyte_settings.minThreshold;
+				this.regenSign *= -1;
+			}
+			if(this.logger != null){
+				this.logger.logRep(currentTime, astrocyte_settings.replenishEnergy);
 			}
 		}
-		var regeneration = function() {
-				setTimeout(function() {
-					move();
-					regeneration();
-					//console.log(astrocyte_settings.replenishEnergy);
-				}, astrocyte_settings.frequency);
-			}
-			//console.log("regeneration");
-		regeneration();
+	}
 
-	};
 
-	//takes away potential firing energy of a neuron if it hasn't recieved any signals for some time
-	NeuralNetwork.prototype.decayFunction = function() {
-		var that = this;
+	NeuralNetwork.prototype.constructNeuralNetwork = function(loadedObject){
+		var loadedMesh = loadedObject.children[0];
+		var loadedMeshVertices = loadedMesh.geometry.vertices;
 
-		var decay = function() {
-			setTimeout(function() {
-				that.allNeurons.forEach(function(neuron){
-					neuron.decay();
-				})
-				decay();
-			}, network_settings.decayTime);
-		};
+		// render loadedMesh
+		loadedMesh.material = new THREE.MeshBasicMaterial({
+			transparent: true,
+			opacity: 0.05,
+			depthTest: false,
+			color: 0x0088ff,
+			blending: THREE.AdditiveBlending
+		});
+		scene.add(loadedObject);
 
-		decay();
+		this.initNeurons(loadedMeshVertices);
+		this.initAxons();
 
-	};
+		this.initialized = true;
 
+		console.log('Neural Network initialized');
+		document.getElementById('loading').style.display = 'none'; // hide loading animation when finish loading model
+		//this.regenerationFunction();
+		//this.decayFunction();
+
+	}
 	NeuralNetwork.prototype.initNeuralNetwork = function() {
 
 		// obj loader
 		var self = this;
-		var loadedMesh, loadedMeshVertices;
 		var loader = new THREE.OBJLoader();
-
+		
+		if(this.logger != null){
+			this.logger.createLogs();
+		}
 		//load connectivity matrix
 		d3.csv("./static/models/connectivity.csv", function(data) {
-
 	  		for(var q = 0;q<188;q++){
 	  			self.connectivityMatrix[q]=data[q];
 	  		}
-	  	});
-  		// console.log(data);
-  		// console.log(self.connectivityMatrix);
-
-		loader.load('./static/models/brain_vertex_low.obj', function constructNeuralNetwork(loadedObject) {
-
-			loadedMesh = loadedObject.children[0];
-			loadedMeshVertices = loadedMesh.geometry.vertices;
-
-			// render loadedMesh
-			loadedMesh.material = new THREE.MeshBasicMaterial({
-				transparent: true,
-				opacity: 0.05,
-				depthTest: false,
-				color: 0x0088ff,
-				blending: THREE.AdditiveBlending
+			loader.load('./static/models/brain_vertex_low.obj', function(loadedObject){
+				self.constructNeuralNetwork(loadedObject);
+				});
 			});
-			scene.add(loadedObject);
-
-			self.initNeurons(loadedMeshVertices);
-			self.initAxons();
-
-			self.initialized = true;
-
-			console.log('Neural Network initialized');
-			document.getElementById('loading').style.display = 'none'; // hide loading animation when finish loading model
-			self.regenerationFunction();
-			self.decayFunction();
-
-		}); // end of loader
-		if(this.logger != null){
-			$.ajax({
-			 	type: "POST",
-			 	url: "/createLogs",
-			  	contentType: "application/json; charset=utf-8",
-			  	data: JSON.stringify("Create the logs"),
-			  	dataType: 'json',
-			  	success: function(data) {
-			  		console.log("success");
-			  	},
-			  	error: function(error) {
-			  		console.log(error);
-			  	}
-			});
-		}
-
-	};
+	}
 
 	NeuralNetwork.prototype.printRegions = function(){
 		for(var i = 0; i<this.allNeurons.length; i++){
@@ -787,7 +819,7 @@
 					numInhibitors++;
 				}
 				//console.log("# of inhibitors" +numInhibitors);
-				n.astrocyte.resetEnergy(); // modify this, should be a rand int between max and min
+				n.astrocyte.resetEnergy(0); // modify this, should be a rand int between max and min
 				//this.allNeurons.push(n);
 				if (n.type == EXCITOR){
 					this.excitorsGeom.vertices.push(n);
@@ -830,70 +862,11 @@
 					// connect neuron if distance ... and limit connection per neuron to not more than x
 					
 					n1.tryConnect(n2, this, j, k);
-					if(this.logger != null){
-						if(this.connections.length > 1000){
-							$.ajax({
-							 	type: "POST",
-							 	url: "/connection",
-							  	contentType: "application/json; charset=utf-8",
-							  	data: JSON.stringify(this.connections),
-							  	dataType: 'json',
-							  	success: function(data) {
-							  		console.log("success");
-							  	},
-							  	error: function(error) {
-							  		console.log(error);
-							  	}
-							});
-							$.ajax({
-							 	type: "POST",
-							 	url: "/conweights",
-							  	contentType: "application/json; charset=utf-8",
-							  	data: JSON.stringify(this.connWeight),
-							  	dataType: 'json',
-							  	success: function(data) {
-							  		console.log("success");
-							  	},
-							  	error: function(error) {
-							  		console.log(error);
-							  	}
-							});
-						}
-						this.connections = [];
-						this.connWeight = [];
-					}
 				}
 			}
-			if(this.logger != null && this.connections.length > 0){
-				$.ajax({
-				 	type: "POST",
-				 	url: "/connection",
-				  	contentType: "application/json; charset=utf-8",
-				  	data: JSON.stringify(this.connections),
-				  	dataType: 'json',
-				  	success: function(data) {
-				  		console.log("success");
-				  	},
-				  	error: function(error) {
-				  		console.log(error);
-				  	}
-				});
-				$.ajax({
-				 	type: "POST",
-				 	url: "/conweights",
-				  	contentType: "application/json; charset=utf-8",
-				  	data: JSON.stringify(this.connWeight),
-				  	dataType: 'json',
-				  	success: function(data) {
-				  		console.log("success");
-				  	},
-				  	error: function(error) {
-				  		console.log(error);
-				  	}
-				});
-				this.connections = [];
-				this.connWeight = [];
-			}
+			if(this.logger != null){
+				this.logger.flushCon();
+			} 
 						
 			// *** attirbute size must bigger than its content ***
 			var axonIndices = new Uint32Array(this.axonIndices.length);
@@ -936,60 +909,38 @@
 
 	};
 
-	NeuralNetwork.prototype.update = function() {
+	NeuralNetwork.prototype.update = function(currentTime) {
 
 		if (!this.initialized) return;
-
+		this.updateRegeneration(currentTime);
 
 		var n, ii;
-		var currentTime = Date.now();
 
 		// update neurons state and release signal
 		for (ii = 0; ii < this.allNeurons.length; ii++) {
 			n = this.allNeurons[ii];
 			// the astrocyte we're taking energy from
-			var a = n.canFire();
-			if (n.receivedSignal && a != null) { // Astrocyte mode
-				// if (n.receivedSignal && n.firedCount < 8)  {	// Traversal mode
-				// if (n.receivedSignal && (currentTime - n.lastSignalRelease > n.releaseDelay) && n.firedCount < 8)  {	// Random mode
-				// if (n.receivedSignal && !n.fired )  {	// Single propagation mode
-
-				// n.fired = true;
-				// n.acc = n.acc - 0.125; // resets energy of neuron
-				// // decrease energy level of astrocyte responsible for 
-				// // giving the neuron the energy it needed to fire
-				// a.deplete();
-
-				// n.lastSignalRelease = currentTime;
-				// n.releaseDelay = THREE.Math.randInt(100, 1000);
-				if (n.fire() === true) {
-					if(this.logger != null){
-						this.logger.addToLastEntry(ii+1);
-						this.logger2.addToLastEntry(n.acc+0.125);					
-					}
-					a.deplete();
-					n.lastSignalRelease = currentTime;
-					this.releaseSignalAt(n);
+			var result = n.fireIfCan(this, currentTime);
+			if(this.logger != null){
+				if (result[0] === true) {
+					this.logger.logFiring(currentTime, ii+1, result[1]);	
+				} else if (result[1] != null) {
+					this.logger.logMissEnergy(currentTime, ii+1, result[1]);
 				}
 			}
-
-
-			n.receivedSignal = false; // if neuron received signal but still in delay reset it
-			//TODO
-			// while we're iterating through the neurons, check each corresponding astrocyte to see if
-			// its energy was all used up, update time remaining until it gets its energy back, possibly
-			// give it its energy back if it's been long enough
-			// if(n.astrocyte.availableEnergy<=astrocyte_settings.minEnergy)
-			// n.astrocyte.replenish();
+			
+		}
+		for (ii = 0; ii < this.allNeurons.length; ii++) {
+			n = this.allNeurons[ii];
+			n.replenishAstrocyte(currentTime);
 		}
 		if(this.logger != null){
-			if(this.logger.getLastEntry() >= 19){
-				this.logger.sendToServer();
-				this.logger2.sendToServer();
-			} else {
-				this.logger2.newEntry();
-				this.logger.newEntry();
+			if(this.logger.entF.length >= 1000 || this.logger.entM.length >= 1000){
+				this.logger.flushFiring();
+				this.logger.flushMiss();
+				//this.logger.flushRep();
 			}
+			
 		}
 		// reset all neurons and when there is X signal
 		if (this.allSignals.length <= 0) {
@@ -1002,8 +953,8 @@
 				// reset signal count for next time
 				n.signalCount = 0;
 			}
-			var averagesignals = allsignals / this.allNeurons.length;
-			console.log("averagesignals: " + averagesignals);
+			//var averagesignals = allsignals / this.allNeurons.length;
+			//console.log("averagesignals: " + averagesignals);
 
 			for (ii = 0; ii < this.allNeurons.length; ii++) { // reset all neuron state
 				n = this.allNeurons[ii];
@@ -1014,24 +965,23 @@
 				// reset all astrocytes
 				// TODO: in the future this should be adjustable and occur constantly,
 				// not just when the signal dies.
-				n.astrocyte.resetEnergy();
+				n.astrocyte.resetEnergy(currentTime);
 			}
-			console.log("New signal released");
+			//console.log("New signal released");
 			this.releaseSignalAt(this.allNeurons[THREE.Math.randInt(0, this.allNeurons.length)]);
 
 		}
 
 		// update and remove signals
-		for (var j = this.allSignals.length - 1; j >= 0; j--) {
-			var s = this.allSignals[j];
-			s.travel();
-
-			if (!s.alive) {
-				s.freeParticle();
-				this.allSignals.splice(j, 1);
-			}
-
-		}
+		this.allSignals.map(function(signal){
+			signal.travel();
+			if (!signal.alive)
+				signal.freeParticle();
+		})
+		this.allSignals = this.allSignals.filter(function(signal)
+		{
+			return signal.alive;
+		})
 
 		// update particle pool vertices
 		this.particlePool.update();
@@ -1121,9 +1071,8 @@
 	// ---- camera
 	camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
 	// camera orbit control
-	cameraCtrl = new THREE.OrbitControls(camera, container);
-	cameraCtrl.object.position.y = 150;
-	cameraCtrl.update();
+	cameraCtrl = new THREE.TrackballControls(camera, container);
+	cameraCtrl.object.position.z = 150;
 
 	// ---- renderer
 	renderer = new THREE.WebGLRenderer({
@@ -1144,32 +1093,35 @@
 	};
 
 	var astrocyte_settings = {
-		minEnergy: 0, // default min
-		maxEnergy: 1, // default max
-		replenishEnergy: 0.5, // amount of energy astrocyte regenerates 
-		regenerationTime: 20000, // time needed for energy to regenerate in milliseconds
+		minEnergy: 0.0, // default min
+		maxEnergy: 1.0, // default max
+		fireEnergy: 0.125, // the amount that depletes on firing
+		replenishEnergy: 0.05, // amount of energy astrocyte regenerates 
+		regenerationTime: 20, // time needed for energy to regenerate in milliseconds
 		//minThreshold: 0.125, // energy level at which the astrocyte starts regenerating energy
-		minThreshold: 0.2, //
-		maxThreshold: 0.8, //
-		frequency: 1000, // in milliseconds
-		amplitude: 0.1 // increased by this amount
+		minThreshold: 0.02, //
+		maxThreshold: 0.08, //
+		frequency: 100, // in milliseconds
+		amplitude: 0.01 // increased by this amount
 	};
 
 	var network_settings = {
-		firing_threshold: 0.5, // neuron fires when reaching this amount.
-		signal_weight: 0.167, // energy of neuron increases by this amount per signal.
-		AxonDistance: 8, //default
+		firing_threshold: 0.50, // neuron fires when reaching this amount.
+		signal_weight: 0.40, // energy of neuron increases by this amount per signal.
+		AxonDistance: 10, //default
 		//AxonDistanceInhibitor: 4, //default
 		NeuronConnection: 6, //default
 		//NeuronConnectionInhibitor: 20, //default
 		decayTime: 5000, //time needed for neurons to decay
 
 		reload: function() {
-			window.neuralNet = new NeuralNetwork();
+			window.clock = new Clock();
+			window.neuralNet = new NeuralNetwork(window.clock);
 		}, // reinitializes the network
 	};
 
 	// Neural Net
+	var clock = window.clock = new Clock();
 	var neuralNet = window.neuralNet = new NeuralNetwork();
 
 
@@ -1182,10 +1134,11 @@
 	gui_info.add(neuralNet, 'numNeurons').name('Neurons');
 	gui_info.add(neuralNet, 'numNeurons').name('Astrocytes');
 	gui_info.add(neuralNet, 'numAxons').name('Axons');
-	gui_info.add(neuralNet, 'numSignals', 0, neuralNet.limitSignals).name('Signals');
+	gui_info.add(neuralNet, 'numSignals', 0, neuralNet.numAxons).name('Signals');
 	gui_info.add(neuralNet, 'numActiveAstrocytes', 0, neuralNet.numActiveAstrocytes).name('Active Astrocytes');
-	gui_info.add(astrocyte_settings, 'minEnergy').name('Min energy');
-	gui_info.add(astrocyte_settings, 'maxEnergy').name('Max energy');
+	gui_info.add(astrocyte_settings, 'minEnergy').name('Pool Min energy');
+	gui_info.add(astrocyte_settings, 'maxEnergy').name('Pool Max energy');
+	gui_info.add(astrocyte_settings, 'fireEnergy').name('Pool Firing Thresh');
 	gui_info.autoListen = false;
 
 	var gui_settings = gui.addFolder('Network Settings');
@@ -1202,10 +1155,10 @@
 	var gui_settings = gui.addFolder('Astrocyte Settings');
 	//gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Threshold for energy regeneration');
 	gui_settings.add(astrocyte_settings, 'replenishEnergy', 0, 1).name('Replenish energy amount').listen();
-	gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 100000).name('Energy regeneration time in ms');
+	gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 500).name('Energy regeneration time in ms');
 	gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Minimum Threshold');
 	gui_settings.add(astrocyte_settings, 'maxThreshold', 0, 1).name('Maximum Threshold');
-	gui_settings.add(astrocyte_settings, 'frequency', 0, 20000).name('frequency for change in energy in ms');
+	gui_settings.add(astrocyte_settings, 'frequency', 0, 1000).name('frequency for change in energy in ms');
 	gui_settings.add(astrocyte_settings, 'amplitude', 0, 1).name('Amplitude');
 	gui_settings.open();
 
@@ -1249,8 +1202,7 @@
 	}
 
 	// ---------- end GUI ----------
-
-
+	
 	(function run() {
 
 
@@ -1258,13 +1210,15 @@
 		renderer.setClearColor(scene_settings.bgColor, 1);
 
 		if (!scene_settings.pause) {
-
-			neuralNet.update();
+			clock.inc(1);
+			neuralNet.update(clock.time());
 			updateGuiInfo();
 
 		}
-
-		renderer.render(scene, camera);
+		//var delta = time.getDelta();
+		cameraCtrl.update();
+		renderer.render( scene, camera );
+		
 		stats.update();
 
 	})();
