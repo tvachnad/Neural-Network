@@ -200,7 +200,7 @@
 		if (this.willFire(currentTime))
 		{
 			if (this.receivedSignal) {
-				var astrocyte = this.astrocyteWithEnergy();
+				var astrocyte = this.astrocyteWithEnergy(false);
 				if (astrocyte != null) { // Astrocyte mode
 					var prevacc = this.acc;
 					this.fire();
