@@ -508,12 +508,14 @@
 		this.urlRep  = "replenish";
 		this.urlCon  = "connection";
 		this.urlConW = "conweights";
+		this.urlRegion = "region";
 		this.entF = []; //firings
 		this.entP = []; //potential energy
 		this.entM = []; //missed energy
 		this.entR = []; //replenish energy
 		this.entC = []; //connection (binary)
 		this.entW = []; //connection weight
+		this.entRe = [];
 	}
 	Logger.prototype.logFiring = function(time, neuron, potential){
 		this.entF.push(time.toString() + "," + neuron.toString() + ", 1\n")
@@ -549,6 +551,14 @@
 			this.entW = [];
 		}
 	}
+	Logger.prototype.logRegion = function(neuron, region){
+		this.entRe.push(neuron.toString() + "," + region.toString() + "\n");
+		if(this.entRe.length >= 200){
+			this.sendToServer(this.entRe, this.urlRegion);
+			this.entRe = [];
+		}
+		
+	}
 	Logger.prototype.flushFiring = function(){
 		this.sendToServer(this.entF, this.urlFire);
 		this.sendToServer(this.entP, this.urlPot);
@@ -568,6 +578,10 @@
 		this.sendToServer(this.entW, this.urlConW);
 		this.entC = [];
 		this.entW = [];
+	}
+	Logger.prototype.flushRegion = function(){
+		this.sendToServer(this.entRe, this.urlRegion);
+		this.entRe = [];
 	}
 	Logger.prototype.sendToServer = function(entries, url){
 		$.ajax({
@@ -805,7 +819,7 @@
 				n.type = EXCITOR;
 				//n.maxConnectionPerNeuron = network_settings.NeuronConnectionExcitor;
 				n.region = i+1;
-
+				
 				n.astrocyte = new Astrocyte();
 				// half of all the astrocytes should be live
 				//console.log("adfasdvknvjanlkdsjnfjvhslkvdbchjksbdn");
@@ -847,7 +861,12 @@
 		scene.add(this.excitorParticles);
 		this.inhibitorParticles = new THREE.PointCloud(this.inhibitorsGeom, this.inhibitorMaterial);
 		scene.add(this.inhibitorParticles);
-
+		
+		for(var i = 0; i < this.allNeurons.length; i++){
+			n = this.allNeurons[i];
+			this.logger.logRegion(i+1, n.region);
+		}
+		this.logger.flushRegion();
 		//this.printRegions();
 
 	};
