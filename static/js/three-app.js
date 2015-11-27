@@ -319,13 +319,13 @@
 		//checks what type of neuron sent the signal to call the correct build function
 		if (from.type == EXCITOR){
 			to.buildExcitor();
-			logger.logInput(clock, to.idx, EXCITOR);
+			logger.logInput(clock, from, to, EXCITOR);
 		}
 		else if (from.type == INHIBITOR) {
 			//console.log("firer = "+this.axon.neuronA.type+" reciever = "+this.axon.neuronB.type);
 			//console.log("energy before = "+this.axon.neuronB.acc);
 			to.buildInhibitor();
-			logger.logInput(clock, to.idx, INHIBITOR);
+			logger.logInput(clock, from, to, INHIBITOR);
 			//console.log("energy after = "+this.axon.neuronB.acc);
 		}
 
@@ -532,8 +532,9 @@
 			this.flushFiring();
 		}
 	}
-	Logger.prototype.logInput = function(time, neuron, type){
-		this.entI.push(time.toString() + "," + neuron.toString() + "," + type.toString() + "\n")
+	Logger.prototype.logInput = function(time, from, to, type){
+		this.entI.push(time.toString() + "," + from.idx.toString() + "," 
+			+ to.idx.toString() + "," + type.toString() + "\n")
 		if(this.entI.length >= 1000){
 			this.flushInput();
 		}
