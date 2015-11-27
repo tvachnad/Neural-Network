@@ -1007,33 +1007,17 @@
 
 		}
 
-		// update and remove signals
-		// this.allSignals.map(function(signal){
-		// 	signal.travel();
-		// 	if (!signal.alive)
-		// 		signal.freeParticle();
-		// })
-		// this.allSignals = this.allSignals.filter(function(signal)
-		// {
-		// 	return signal.alive;
-		// })
+		self = this;
+		this.allSignals.map(function(signal){
+			signal.travel(currentTime, self.logger);
+			if (!signal.alive)
+				signal.freeParticle();
+		});
+		this.allSignals = this.allSignals.filter(function(signal)
+		{
+			return signal.alive;
+		});
 
-		// a reverse refactorization
-		for (var j = this.allSignals.length - 1; j >= 0; j--) {
-			var s = this.allSignals[j];
-			s.travel(currentTime, this.logger);
-
-			if (!s.alive) {
-				s.particle.free();
-				for (var k = this.allSignals.length - 1; k >= 0; k--) {
-					if (s === this.allSignals[k]) {
-						this.allSignals.splice(k, 1);
-						break;
-					}
-				}
-			}
-
-		}
 
 		// update particle pool vertices
 		this.particlePool.update();
