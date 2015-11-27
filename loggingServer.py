@@ -8,6 +8,7 @@ class logserver:
 	
 
 	firefile = ""
+	infile 	 = ""
 	potfile  = ""
 	missfile = ""
 	repfile  = ""
@@ -17,6 +18,9 @@ class logserver:
 	
 	def logFiring(self, log):
 		self.writeLog(self.firefile, log)
+
+	def logInput(self, log):
+		self.writeLog(self.infile, log)
 
 	def logPot(self, log):
 		self.writeLog(self.potfile, log)
@@ -49,18 +53,20 @@ class logserver:
 		conpath = os.path.normpath(os.path.join(logpath, 'Connections'))
 		conwpath = os.path.normpath(os.path.join(logpath, 'ConWeights'))
 		firepath = os.path.normpath(os.path.join(logpath, 'Firing'))
+		inputpath = os.path.normpath(os.path.join(logpath, 'Input'))
 		potpath = os.path.normpath(os.path.join(logpath, 'Potential'))
 		misspath = os.path.normpath(os.path.join(logpath, 'MissEnergy'))
 		reppath = os.path.normpath(os.path.join(logpath, 'ReplenishEnergy'))
 		regpath = os.path.normpath(os.path.join(logpath, 'Region'))
 
-		for dir in [conpath, conwpath, firepath, potpath, misspath, reppath, regpath]:
+		for dir in [conpath, conwpath, firepath, inputpath, potpath, misspath, reppath, regpath]:
 			if not os.path.exists(dir):
 				os.makedirs(dir)
 	
 		timestampstr = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 	
 		self.firefile = os.path.join(firepath, timestampstr)
+		self.infile = os.path.join(inputpath, timestampstr)
 		self.potfile = os.path.join(potpath, timestampstr)
 		self.missfile = os.path.join(misspath, timestampstr)
 		self.repfile = os.path.join(reppath, timestampstr)
@@ -69,6 +75,8 @@ class logserver:
 		self.conwfile = os.path.join(conwpath, timestampstr)
 
 		lfile = open(self.firefile, 'w')
+		lfile.close()
+		lfile = open(self.infile, 'w')
 		lfile.close()
 		lfile = open(self.potfile, 'w')
 		lfile.close()
@@ -104,6 +112,10 @@ def logRequest(logger):
 @app.route('/firing', methods=['POST'])
 def logFiring():
 	return logRequest(logserv.logFiring)
+
+@app.route('/input', methods=['POST'])
+def logInput():
+	return logRequest(logserv.logInput)
 
 @app.route('/potential', methods=['POST'])
 def logPotential():

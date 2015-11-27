@@ -23,6 +23,21 @@ body {
   margin: auto;
 }
 
-.h1, p {
+.h1, p{
   text-shadow: 0 10px 10px rgba(0,0,0,.5);
+}
+
+.btn-default {
+  color: #fff;
+  background-color: transparent;
+  border-color: #fff;
+}
+
+.navbar-inverse {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.navbar-inverse .navbar-nav>.active>a, .navbar-inverse .navbar-nav>.active>a:focus, .navbar-inverse .navbar-nav>.active>a:hover {
+  background-color: transparent;
 }

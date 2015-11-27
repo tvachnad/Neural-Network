@@ -2,6 +2,8 @@
 	"use strict";
 
 	// Constants -------------------------------------------------------------
+	var counter1 = 0;
+	var counter2 = 0;
 
 	const EXCITOR = 0;
 	const INHIBITOR = 1;
@@ -28,6 +30,7 @@
 		this.xPos = x;
 		this.yPos = y;
 		this.zPos = z;
+		this.idx = -1;
 
 		//neuron fires when this number passes the firing threshold
 		this.acc = 0.5;
@@ -197,7 +200,7 @@
 		if (this.willFire(currentTime))
 		{
 			if (this.receivedSignal) {
-				var astrocyte = this.astrocyteWithEnergy();
+				var astrocyte = this.astrocyteWithEnergy(false);
 				if (astrocyte != null) { // Astrocyte mode
 					var prevacc = this.acc;
 					this.fire();
@@ -307,19 +310,22 @@
 
 	};
 
-	Signal.prototype.dispatchSignal = function(from, to)
+	Signal.prototype.dispatchSignal = function(from, to, clock, logger)
 	{
 		this.alive = false;
 		to.receivedSignal = true;
 		to.signalCount++;
 		to.prevReleaseAxon = this.axon;
 		//checks what type of neuron sent the signal to call the correct build function
-		if (from.type == EXCITOR)
+		if (from.type == EXCITOR){
 			to.buildExcitor();
+			logger.logInput(clock, to.idx, EXCITOR);
+		}
 		else if (from.type == INHIBITOR) {
 			//console.log("firer = "+this.axon.neuronA.type+" reciever = "+this.axon.neuronB.type);
 			//console.log("energy before = "+this.axon.neuronB.acc);
 			to.buildInhibitor();
+			logger.logInput(clock, to.idx, INHIBITOR);
 			//console.log("energy after = "+this.axon.neuronB.acc);
 		}
 
@@ -333,7 +339,7 @@
 		}
 	}				
 
-	Signal.prototype.travel = function() {
+	Signal.prototype.travel = function(clock, logger) {
 
 		var pos;
 		//var temp = this.axon.getPoint(this.t);
@@ -343,7 +349,7 @@
 			this.t += this.speed;
 			if (this.t >= 1) {
 				this.t = 1;
-				this.dispatchSignal(this.axon.neuronA, this.axon.neuronB);
+				this.dispatchSignal(this.axon.neuronA, this.axon.neuronB, clock, logger);
 			}
 			//console.log("fired signal = "+this.startingPoint);
 
@@ -352,7 +358,7 @@
 			this.t -= this.speed;
 			if (this.t <= 0) {
 				this.t = 0;
-				this.dispatchSignal(this.axon.neuronB, this.axon.neuronA);
+				this.dispatchSignal(this.axon.neuronB, this.axon.neuronA, clock, logger);
 			}
 			//console.log("fired signal = "+this.startingPoint);
 		}
@@ -503,6 +509,7 @@
 	// Logger ----------------------------------------------------------------
 	function Logger(){
 		this.urlFire = "firing";
+		this.urlInput = "input";
 		this.urlPot  = "potential";
 		this.urlMiss = "miss";
 		this.urlRep  = "replenish";
@@ -510,6 +517,7 @@
 		this.urlConW = "conweights";
 		this.urlRegion = "region";
 		this.entF = []; //firings
+		this.entI = []; //inputs
 		this.entP = []; //potential energy
 		this.entM = []; //missed energy
 		this.entR = []; //replenish energy
@@ -521,34 +529,32 @@
 		this.entF.push(time.toString() + "," + neuron.toString() + ", 1\n")
 		this.entP.push(time.toString() + "," + neuron.toString() + "," + potential.toString() + "\n")
 		if(this.entF.length >= 1000){
-			this.sendToServer(this.entF, this.urlFire);
-			this.sendToServer(this.entP, this.urlPot);
-			this.entF = [];
-			this.entP = [];
+			this.flushFiring();
+		}
+	}
+	Logger.prototype.logInput = function(time, neuron, type){
+		this.entI.push(time.toString() + "," + neuron.toString() + "," + type.toString() + "\n")
+		if(this.entI.length >= 1000){
+			this.flushInput();
 		}
 	}
 	Logger.prototype.logMissEnergy = function(time, neuron, energy){
 		this.entM.push(time.toString() + "," + neuron.toString() + "," + energy.toString() + "\n")
 		if(this.entM.length >= 1000){
-			this.sendToServer(this.entM, this.urlMiss);
-			this.entM = [];
+			this.flushMiss();
 		}
 	}
 	Logger.prototype.logRep = function(time, energy){
 		this.entR.push(time.toString() + "," + energy.toString());
 		if(this.entR.length >= 200){
-			this.sendToServer(this.entR, this.urlRep);
-			this.entR = [];
+			this.flushRep();
 		}
 	}
 	Logger.prototype.logCon = function(n1, n2, weight){
 		this.entC.push(n1.toString() + "," + n2.toString() + ", 1\n")
 		this.entW.push(n1.toString() + "," + n2.toString() + "," + weight.toString() + "\n")
 		if(this.entC.length >= 1000){
-			this.sendToServer(this.entC, this.urlCon);
-			this.sendToServer(this.entW, this.urlConW);
-			this.entC = [];
-			this.entW = [];
+			this.flushCon();
 		}
 	}
 	Logger.prototype.logRegion = function(neuron, region){
@@ -564,6 +570,10 @@
 		this.sendToServer(this.entP, this.urlPot);
 		this.entF = [];
 		this.entP = [];
+	}
+	Logger.prototype.flushInput = function(){
+		this.sendToServer(this.entI, this.urlInput);
+		this.entI = [];
 	}
 	Logger.prototype.flushMiss = function(){
 		this.sendToServer(this.entM, this.urlMiss);
@@ -856,6 +866,11 @@
 		this.numberExcite = exciteNeurons.length;
 		this.numberInhibit = inhibNeurons.length;
 
+		// give each Neuron knowledge of their index
+		for(var i = 0; i < this.allNeurons.length; i++){
+			this.allNeurons[i].idx = i;
+		}
+
 		// neuron mesh
 		this.excitorParticles = new THREE.PointCloud(this.excitorsGeom, this.excitorMaterial);
 		scene.add(this.excitorParticles);
@@ -992,15 +1007,32 @@
 		}
 
 		// update and remove signals
-		this.allSignals.map(function(signal){
-			signal.travel();
-			if (!signal.alive)
-				signal.freeParticle();
-		})
-		this.allSignals = this.allSignals.filter(function(signal)
-		{
-			return signal.alive;
-		})
+		// this.allSignals.map(function(signal){
+		// 	signal.travel();
+		// 	if (!signal.alive)
+		// 		signal.freeParticle();
+		// })
+		// this.allSignals = this.allSignals.filter(function(signal)
+		// {
+		// 	return signal.alive;
+		// })
+
+		// a reverse refactorization
+		for (var j = this.allSignals.length - 1; j >= 0; j--) {
+			var s = this.allSignals[j];
+			s.travel(currentTime, this.logger);
+
+			if (!s.alive) {
+				s.particle.free();
+				for (var k = this.allSignals.length - 1; k >= 0; k--) {
+					if (s === this.allSignals[k]) {
+						this.allSignals.splice(k, 1);
+						break;
+					}
+				}
+			}
+
+		}
 
 		// update particle pool vertices
 		this.particlePool.update();
@@ -1090,8 +1122,9 @@
 	// ---- camera
 	camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
 	// camera orbit control
-	cameraCtrl = new THREE.TrackballControls(camera, container);
-	cameraCtrl.object.position.z = 150;
+	cameraCtrl = new THREE.OrbitControls(camera, container);
+	cameraCtrl.object.position.y = 150;
+	cameraCtrl.update();
 
 	// ---- renderer
 	renderer = new THREE.WebGLRenderer({
@@ -1221,7 +1254,8 @@
 	}
 
 	// ---------- end GUI ----------
-	
+
+
 	(function run() {
 
 
@@ -1234,10 +1268,8 @@
 			updateGuiInfo();
 
 		}
-		//var delta = time.getDelta();
-		cameraCtrl.update();
-		renderer.render( scene, camera );
-		
+
+		renderer.render(scene, camera);
 		stats.update();
 
 	})();
