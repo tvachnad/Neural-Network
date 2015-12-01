@@ -33,7 +33,7 @@
 		this.idx = -1;
 
 		//neuron fires when this number passes the firing threshold
-		this.acc = 0.5;
+		this.acc = 0.2;
 
 		this.region = -1; // which region the neuron belongs to
 		// 1 - 188, assigned during initialization
@@ -546,8 +546,8 @@
 		}
 	}
 	Logger.prototype.logRep = function(time, energy){
-		this.entR.push(time.toString() + "," + energy.toString());
-		if(this.entR.length >= 200){
+		this.entR.push(time.toString() + "," + energy.toString() + "\n");
+		if(this.entR.length >= 20){
 			this.flushRep();
 		}
 	}
@@ -747,7 +747,8 @@
 	NeuralNetwork.prototype.updateRegeneration = function(currentTime) {
 		var timeSinceLastUpdate = currentTime - this.lastRegenUpdate;
 		if(timeSinceLastUpdate >= astrocyte_settings.frequency){
-			astrocyte_settings.replenishEnergy += this.regenSign*astrocyte_settings.amplitude;
+			//astrocyte_settings.replenishEnergy += this.regenSign*astrocyte_settings.amplitude;
+			astrocyte_settings.replenishEnergy = 0.05;
 			this.lastRegenUpdate = currentTime;
 			if(astrocyte_settings.replenishEnergy > astrocyte_settings.maxThreshold){
 				astrocyte_settings.replenishEnergy = astrocyte_settings.maxThreshold; 
@@ -1134,7 +1135,7 @@
 		maxEnergy: 1.0, // default max
 		fireEnergy: 0.125, // the amount that depletes on firing
 		replenishEnergy: 0.05, // amount of energy astrocyte regenerates 
-		regenerationTime: 20, // time needed for energy to regenerate in milliseconds
+		regenerationTime: 150, // time needed for energy to regenerate in milliseconds
 		//minThreshold: 0.125, // energy level at which the astrocyte starts regenerating energy
 		minThreshold: 0.02, //
 		maxThreshold: 0.08, //
@@ -1143,7 +1144,7 @@
 	};
 
 	var network_settings = {
-		firing_threshold: 0.50, // neuron fires when reaching this amount.
+		firing_threshold: 0.20, // neuron fires when reaching this amount.
 		signal_weight: 0.40, // energy of neuron increases by this amount per signal.
 		AxonDistance: 10, //default
 		//AxonDistanceInhibitor: 4, //default
