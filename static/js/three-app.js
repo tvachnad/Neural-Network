@@ -906,7 +906,7 @@
 		scene.add(this.excitorParticles);
 		this.inhibitorParticles = new THREE.PointCloud(this.inhibitorsGeom, this.inhibitorMaterial);
 		scene.add(this.inhibitorParticles);
-		if(logger != null){
+		if(this.logger != null){
 			for(var i = 0; i < this.allNeurons.length; i++){
 				n = this.allNeurons[i];
 				this.logger.logRegion(i+1, n.region);
