@@ -321,13 +321,15 @@
 		//checks what type of neuron sent the signal to call the correct build function
 		if (from.type == EXCITOR){
 			to.buildExcitor();
-			logger.logInput(clock, from, to, EXCITOR);
+			if(logger != null)
+				logger.logInput(clock, from, to, EXCITOR);
 		}
 		else if (from.type == INHIBITOR) {
 			//console.log("firer = "+this.axon.neuronA.type+" reciever = "+this.axon.neuronB.type);
 			//console.log("energy before = "+this.axon.neuronB.acc);
 			to.buildInhibitor();
-			logger.logInput(clock, from, to, INHIBITOR);
+			if(logger != null)
+				logger.logInput(clock, from, to, INHIBITOR);
 			//console.log("energy after = "+this.axon.neuronB.acc);
 		}
 
@@ -657,8 +659,8 @@
 	// Neural Network --------------------------------------------------------
 	function NeuralNetwork() {
 		this.initialized = false;
-		//this.logger = null; 
-		this.logger = new Logger();
+		this.logger = null; 
+		//this.logger = new Logger();
 		this.numberExcite = 0;
 		this.numberInhibit = 0;
 		
@@ -904,13 +906,14 @@
 		scene.add(this.excitorParticles);
 		this.inhibitorParticles = new THREE.PointCloud(this.inhibitorsGeom, this.inhibitorMaterial);
 		scene.add(this.inhibitorParticles);
-		
-		for(var i = 0; i < this.allNeurons.length; i++){
-			n = this.allNeurons[i];
-			this.logger.logRegion(i+1, n.region);
+		if(logger != null){
+			for(var i = 0; i < this.allNeurons.length; i++){
+				n = this.allNeurons[i];
+				this.logger.logRegion(i+1, n.region);
+			}
+			this.logger.flushRegion();
+			//this.printRegions();
 		}
-		this.logger.flushRegion();
-		//this.printRegions();
 
 	};
 
