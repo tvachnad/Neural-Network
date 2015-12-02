@@ -87,7 +87,6 @@
 		var randomForMatrix = (Math.random());
 		var canConnect = false;
 
-
 		var probFromMatrix = network.connectivityMatrix[r1-1][r2];
         probFromMatrix = Number(probFromMatrix);
         probFromMatrix = probFromMatrix / 5000;
@@ -395,7 +394,7 @@
 
 		this.offScreenPos = new THREE.Vector3(9999, 9999, 9999); // #CM0A r68 PointCloud default frustumCull = true(extended from Object3D), so need to set to 'false' for this to work with oppScreenPos, else particles will dissappear
 
-		this.pColor = 0xffd100;
+		this.pColor = 0xfff6cd;
 		this.pSize = 0.6;
 
 		var particle;
@@ -686,7 +685,7 @@
 		this.allAxons = [];
 
 		// axon
-		this.excitorAxonOpacityMultiplier = 2.0;
+		this.excitorAxonOpacityMultiplier = 1.0;
 		this.excitorAxonColor = 0x0099ff;
 		this.excitorAxonGeom = new THREE.BufferGeometry();
 		this.excitorAxonPositions = [];
@@ -700,7 +699,14 @@
 			},
 			opacityMultiplier: {
 				type: 'f',
-				value: 2.0
+				value: 1.0
+			}
+		};
+
+		this.excitorShaderAttributes = {
+			opacityAttr: {
+				type: 'f',
+				value: []
 			}
 		};
 
@@ -722,7 +728,7 @@
 			}
 		};
 
-		this.shaderAttributes = {
+		this.inhibitorShaderAttributes = {
 			opacityAttr: {
 				type: 'f',
 				value: []
@@ -937,23 +943,26 @@
 			// *** attirbute size must bigger than its content ***
 			var excitorAxonIndices = new Uint32Array(this.excitorAxonIndices.length);
 			var excitorAxonPositions = new Float32Array(this.excitorAxonPositions.length);
-			var axonOpacities = new Float32Array(this.shaderAttributes.opacityAttr.value.length);
+			var excitorAxonOpacities = new Float32Array(this.excitorShaderAttributes.opacityAttr.value.length);
 
 			var inhibitorAxonIndices = new Uint32Array(this.inhibitorAxonIndices.length);
 			var inhibitorAxonPositions = new Float32Array(this.inhibitorAxonPositions.length);
+			var inhibitorAxonOpacities = new Float32Array(this.inhibitorShaderAttributes.opacityAttr.value.length);
 
 			// transfer temp-array to arrayBuffer
 			transferToArrayBuffer(this.excitorAxonIndices, excitorAxonIndices);
 			transferToArrayBuffer(this.excitorAxonPositions, excitorAxonPositions);
-			transferToArrayBuffer(this.shaderAttributes.opacityAttr.value, axonOpacities);
+			transferToArrayBuffer(this.excitorShaderAttributes.opacityAttr.value, excitorAxonOpacities);
 			this.excitorAxonIndices = [];
 			this.excitorAxonPositions = [];
-			this.axonOpacities = [];
+			this.excitorAxonOpacities = [];
 
 			transferToArrayBuffer(this.inhibitorAxonIndices, inhibitorAxonIndices);
 			transferToArrayBuffer(this.inhibitorAxonPositions, inhibitorAxonPositions);
+			transferToArrayBuffer(this.inhibitorShaderAttributes.opacityAttr.value, inhibitorAxonOpacities);
 			this.inhibitorAxonIndices = [];
 			this.inhibitorAxonPositions = [];
+			this.inhibitorAxonOpacities = [];
 
 			function transferToArrayBuffer(fromArr, toArr) {
 				for (i=0; i<toArr.length; i++) {
@@ -963,17 +972,17 @@
 
 			this.excitorAxonGeom.addAttribute( 'index', new THREE.BufferAttribute(excitorAxonIndices, 1) );
 			this.excitorAxonGeom.addAttribute( 'position', new THREE.BufferAttribute(excitorAxonPositions, 3) );
-			this.excitorAxonGeom.addAttribute( 'opacityAttr', new THREE.BufferAttribute(axonOpacities, 1) );
+			this.excitorAxonGeom.addAttribute( 'opacityAttr', new THREE.BufferAttribute(excitorAxonOpacities, 1) );
 
 			this.inhibitorAxonGeom.addAttribute( 'index', new THREE.BufferAttribute(inhibitorAxonIndices, 1) );
 			this.inhibitorAxonGeom.addAttribute( 'position', new THREE.BufferAttribute(inhibitorAxonPositions, 3) );
-			this.inhibitorAxonGeom.addAttribute( 'opacityAttr', new THREE.BufferAttribute(axonOpacities, 1) );
+			this.inhibitorAxonGeom.addAttribute( 'opacityAttr', new THREE.BufferAttribute(inhibitorAxonOpacities, 1) );
 
 
 			// axons mesh
 			this.excitorShaderMaterial = new THREE.ShaderMaterial( {
 				uniforms:       this.excitorShaderUniforms,
-				attributes:     this.shaderAttributes,
+				attributes:     this.excitorShaderAttributes,
 				vertexShader:   document.getElementById('vertexshader-axon').textContent,
 				fragmentShader: document.getElementById('fragmentshader-axon').textContent,
 				blending:       THREE.AdditiveBlending,
@@ -983,7 +992,7 @@
 
 			this.inhibitorShaderMaterial = new THREE.ShaderMaterial( {
 				uniforms:       this.inhibitorShaderUniforms,
-				attributes:     this.shaderAttributes,
+				attributes:     this.inhibitorShaderAttributes,
 				vertexShader:   document.getElementById('vertexshader-axon').textContent,
 				fragmentShader: document.getElementById('fragmentshader-axon').textContent,
 				blending:       THREE.AdditiveBlending,
@@ -992,7 +1001,7 @@
 			});
 
 		this.excitorAxonMesh = new THREE.Line(this.excitorAxonGeom, this.excitorShaderMaterial, THREE.LinePieces);
-		this.inhibitorAxonMesh = new THREE.Line(this.excitorAxonGeom, this.inhibitorShaderMaterial, THREE.LinePieces);
+		this.inhibitorAxonMesh = new THREE.Line(this.inhibitorAxonGeom, this.inhibitorShaderMaterial, THREE.LinePieces);
 
 		scene.add(this.excitorAxonMesh);
 		scene.add(this.inhibitorAxonMesh);
@@ -1099,7 +1108,7 @@
 				this.excitorAxonIndices.push(idx, idx + 1);
 
 				var opacity = THREE.Math.randFloat(0.002, 0.2);
-				this.shaderAttributes.opacityAttr.value.push(opacity, opacity);
+				this.excitorShaderAttributes.opacityAttr.value.push(opacity, opacity);
 
 			}
 
@@ -1124,7 +1133,7 @@
 				this.inhibitorAxonIndices.push(idx, idx + 1);
 
 				var opacity = THREE.Math.randFloat(0.002, 0.2);
-				this.shaderAttributes.opacityAttr.value.push(opacity, opacity);
+				this.inhibitorShaderAttributes.opacityAttr.value.push(opacity, opacity);
 
 			}
 
