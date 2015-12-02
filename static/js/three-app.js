@@ -395,7 +395,7 @@
 
 		this.offScreenPos = new THREE.Vector3(9999, 9999, 9999); // #CM0A r68 PointCloud default frustumCull = true(extended from Object3D), so need to set to 'false' for this to work with oppScreenPos, else particles will dissappear
 
-		this.pColor = 0xff4400;
+		this.pColor = 0xffd100;
 		this.pSize = 0.6;
 
 		var particle;
@@ -686,7 +686,7 @@
 		this.allAxons = [];
 
 		// axon
-		this.axonOpacityMultiplier = 1.0;
+		this.excitorAxonOpacityMultiplier = 2.0;
 		this.excitorAxonColor = 0x0099ff;
 		this.excitorAxonGeom = new THREE.BufferGeometry();
 		this.excitorAxonPositions = [];
@@ -700,11 +700,12 @@
 			},
 			opacityMultiplier: {
 				type: 'f',
-				value: 1.0
+				value: 2.0
 			}
 		};
 
-		this.inhibitorAxonColor = 0xff0000;
+		this.inhibitorAxonOpacityMultiplier = 1.0;
+		this.inhibitorAxonColor = 0xff5757;
 		this.inhibitorAxonGeom = new THREE.BufferGeometry();
 		this.inhibitorAxonPositions = [];
 		this.inhibitorAxonIndices = [];
@@ -1171,7 +1172,8 @@
 
 		this.excitorShaderUniforms.color.value.set(this.excitorAxonColor);
 		this.inhibitorShaderUniforms.color.value.set(this.inhibitorAxonColor);
-		this.excitorShaderUniforms.opacityMultiplier.value = this.axonOpacityMultiplier;
+		this.excitorShaderUniforms.opacityMultiplier.value = this.excitorAxonOpacityMultiplier;
+		this.inhibitorShaderUniforms.opacityMultiplier.value = this.inhibitorAxonOpacityMultiplier;
 
 		this.particlePool.updateSettings();
 	};
@@ -1299,7 +1301,8 @@
 	gui_settings.add(neuralNet.particlePool, 'pSize', 0.2, 2).name('Signal Size');
 	gui_settings.add(neuralNet, 'neuronSize', 0, 2).name('Neuron Size');
 	gui_settings.add(neuralNet, 'neuronOpacity', 0, 1.0).name('Neuron Opacity');
-	gui_settings.add(neuralNet, 'axonOpacityMultiplier', 0.0, 5.0).name('Axon Opacity Mult');
+	gui_settings.add(neuralNet, 'excitorAxonOpacityMultiplier', 0.0, 5.0).name('Excitor Axon Opacity Mult');
+	gui_settings.add(neuralNet, 'inhibitorAxonOpacityMultiplier', 0.0, 5.0).name('Inhibitor Axon Opacity Mult');
 	gui_settings.addColor(neuralNet.particlePool, 'pColor').name('Signal Color');
 	gui_settings.addColor(neuralNet, 'excitorColor').name('Excitor Color');
 	gui_settings.addColor(neuralNet, 'inhibitorColor').name('Inhibitor Color');
