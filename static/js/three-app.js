@@ -47,8 +47,9 @@
 	Neuron.prototype.connectNeuronOneDirection = function(neuronB) {
 
 		var neuronA = this;
+		var type = neuronA.type;
 		// create axon and establish connection from A to B
-		var axon = new Axon(neuronA, neuronB);
+		var axon = new Axon(neuronA, neuronB, type);
 		neuronA.connection.push(new Connection(axon, 'A'));
 		neuronA.neurons.push(neuronB);
 		return axon;
@@ -60,8 +61,9 @@
 	Neuron.prototype.connectNeuronTwoDirection = function(neuronB) {
 
 		var neuronA = this;
+		var type = neuronA.type;
 		// create axon and establish connection in both directions
-		var axon = new Axon(neuronA, neuronB);
+		var axon = new Axon(neuronA, neuronB, type);
 		neuronA.connection.push(new Connection(axon, 'A'));
 		neuronB.connection.push(new Connection(axon, 'B'));
 		neuronA.neurons.push(neuronB);
@@ -482,17 +484,24 @@
 
 	// Axon ------------------------------------------------------------------
 
-	function Axon(neuronA, neuronB) {
+	function Axon(neuronA, neuronB, type) {
 
 		this.weight = 1;
+		this.type = type;
 
 		this.neuronA = neuronA;
 		this.neuronB = neuronB;
 		this.cpLength = neuronA.distanceTo(neuronB);
 		THREE.LineCurve3.call(this, this.neuronA, this.neuronB);
 
-		this.geom = new THREE.Geometry();
-		this.geom.vertices.push(this.neuronA, this.neuronB);
+		if(type === INHIBITOR){
+			this.inhibitorGeom = new THREE.Geometry();
+			this.inhibitorGeom.vertices.push(this.neuronA, this.neuronB);
+		}
+		else{
+			this.excitorGeom = new THREE.Geometry();
+			this.excitorGeom.vertices.push(this.neuronA, this.neuronB);
+		}
 
 	}
 
@@ -676,16 +685,33 @@
 
 		// axon
 		this.axonOpacityMultiplier = 1.0;
-		this.axonColor = 0x0099ff;
-		this.axonGeom = new THREE.BufferGeometry();
-		this.axonPositions = [];
-		this.axonIndices = [];
-		this.axonNextPositionsIndex = 0;
+		this.excitorAxonColor = 0x0099ff;
+		this.excitorAxonGeom = new THREE.BufferGeometry();
+		this.excitorAxonPositions = [];
+		this.excitorAxonIndices = [];
+		this.excitorAxonNextPositionsIndex = 0;
 
-		this.shaderUniforms = {
+		this.excitorShaderUniforms = {
 			color: {
 				type: 'c',
-				value: new THREE.Color(this.axonColor)
+				value: new THREE.Color(this.excitorAxonColor)
+			},
+			opacityMultiplier: {
+				type: 'f',
+				value: 1.0
+			}
+		};
+
+		this.inhibitorAxonColor = 0xff0000;
+		this.inhibitorAxonGeom = new THREE.BufferGeometry();
+		this.inhibitorAxonPositions = [];
+		this.inhibitorAxonIndices = [];
+		this.inhibitorAxonNextPositionsIndex = 0;
+
+		this.inhibitorShaderUniforms = {
+			color: {
+				type: 'c',
+				value: new THREE.Color(this.inhibitorAxonColor)
 			},
 			opacityMultiplier: {
 				type: 'f',
@@ -905,17 +931,25 @@
 			} 
 						
 			// *** attirbute size must bigger than its content ***
-			var axonIndices = new Uint32Array(this.axonIndices.length);
-			var axonPositions = new Float32Array(this.axonPositions.length);
+			var excitorAxonIndices = new Uint32Array(this.excitorAxonIndices.length);
+			var excitorAxonPositions = new Float32Array(this.excitorAxonPositions.length);
 			var axonOpacities = new Float32Array(this.shaderAttributes.opacityAttr.value.length);
 
+			var inhibitorAxonIndices = new Uint32Array(this.inhibitorAxonIndices.length);
+			var inhibitorAxonPositions = new Float32Array(this.inhibitorAxonPositions.length);
+
 			// transfer temp-array to arrayBuffer
-			transferToArrayBuffer(this.axonIndices, axonIndices);
-			transferToArrayBuffer(this.axonPositions, axonPositions);
+			transferToArrayBuffer(this.excitorAxonIndices, excitorAxonIndices);
+			transferToArrayBuffer(this.excitorAxonPositions, excitorAxonPositions);
 			transferToArrayBuffer(this.shaderAttributes.opacityAttr.value, axonOpacities);
-			this.axonIndices = [];
-			this.axonPositions = [];
+			this.excitorAxonIndices = [];
+			this.excitorAxonPositions = [];
 			this.axonOpacities = [];
+
+			transferToArrayBuffer(this.inhibitorAxonIndices, inhibitorAxonIndices);
+			transferToArrayBuffer(this.inhibitorAxonPositions, inhibitorAxonPositions);
+			this.inhibitorAxonIndices = [];
+			this.inhibitorAxonPositions = [];
 
 			function transferToArrayBuffer(fromArr, toArr) {
 				for (i=0; i<toArr.length; i++) {
@@ -923,14 +957,18 @@
 				}
 			}
 
-			this.axonGeom.addAttribute( 'index', new THREE.BufferAttribute(axonIndices, 1) );
-			this.axonGeom.addAttribute( 'position', new THREE.BufferAttribute(axonPositions, 3) );
-			this.axonGeom.addAttribute( 'opacityAttr', new THREE.BufferAttribute(axonOpacities, 1) );
+			this.excitorAxonGeom.addAttribute( 'index', new THREE.BufferAttribute(excitorAxonIndices, 1) );
+			this.excitorAxonGeom.addAttribute( 'position', new THREE.BufferAttribute(excitorAxonPositions, 3) );
+			this.excitorAxonGeom.addAttribute( 'opacityAttr', new THREE.BufferAttribute(axonOpacities, 1) );
+
+			this.inhibitorAxonGeom.addAttribute( 'index', new THREE.BufferAttribute(inhibitorAxonIndices, 1) );
+			this.inhibitorAxonGeom.addAttribute( 'position', new THREE.BufferAttribute(inhibitorAxonPositions, 3) );
+			this.inhibitorAxonGeom.addAttribute( 'opacityAttr', new THREE.BufferAttribute(axonOpacities, 1) );
 
 
 			// axons mesh
-			this.shaderMaterial = new THREE.ShaderMaterial( {
-				uniforms:       this.shaderUniforms,
+			this.excitorShaderMaterial = new THREE.ShaderMaterial( {
+				uniforms:       this.excitorShaderUniforms,
 				attributes:     this.shaderAttributes,
 				vertexShader:   document.getElementById('vertexshader-axon').textContent,
 				fragmentShader: document.getElementById('fragmentshader-axon').textContent,
@@ -939,10 +977,21 @@
 				transparent:    true
 			});
 
-		this.axonMesh = new THREE.Line(this.axonGeom, this.shaderMaterial, THREE.LinePieces);
+			this.inhibitorShaderMaterial = new THREE.ShaderMaterial( {
+				uniforms:       this.inhibitorShaderUniforms,
+				attributes:     this.shaderAttributes,
+				vertexShader:   document.getElementById('vertexshader-axon').textContent,
+				fragmentShader: document.getElementById('fragmentshader-axon').textContent,
+				blending:       THREE.AdditiveBlending,
+				// depthTest:      false,
+				transparent:    true
+			});
 
-		scene.add(this.axonMesh);
+		this.excitorAxonMesh = new THREE.Line(this.excitorAxonGeom, this.excitorShaderMaterial, THREE.LinePieces);
+		this.inhibitorAxonMesh = new THREE.Line(this.excitorAxonGeom, this.inhibitorShaderMaterial, THREE.LinePieces);
 
+		scene.add(this.excitorAxonMesh);
+		scene.add(this.inhibitorAxonMesh);
 	};
 
 	NeuralNetwork.prototype.update = function(currentTime) {
@@ -1029,9 +1078,9 @@
 	};
 
 	// add vertices to temp-arrayBuffer, generate temp-indexBuffer and temp-opacityArrayBuffer 
-	NeuralNetwork.prototype.constructAxonArrayBuffer = function(axon) {
+	NeuralNetwork.prototype.constructExcitorAxonArrayBuffer = function(axon) {
 		this.allAxons.push(axon);
-		var vertices = axon.geom.vertices;
+		var vertices = axon.excitorGeom.vertices;
 		var numVerts = vertices.length;
 
 		// &&&&&&&&&&&&&&&&&&&&&^^^^^^^^^^^^^^^^^^^^^
@@ -1039,19 +1088,51 @@
 
 		for (var i = 0; i < numVerts; i++) {
 
-			this.axonPositions.push(vertices[i].x, vertices[i].y, vertices[i].z);
+			this.excitorAxonPositions.push(vertices[i].x, vertices[i].y, vertices[i].z);
 
 			if (i < numVerts - 1) {
-				var idx = this.axonNextPositionsIndex;
-				this.axonIndices.push(idx, idx + 1);
+				var idx = this.excitorAxonNextPositionsIndex;
+				this.excitorAxonIndices.push(idx, idx + 1);
 
 				var opacity = THREE.Math.randFloat(0.002, 0.2);
 				this.shaderAttributes.opacityAttr.value.push(opacity, opacity);
 
 			}
 
-			this.axonNextPositionsIndex += 1;
+			this.excitorAxonNextPositionsIndex += 1;
 		}
+	};
+
+		NeuralNetwork.prototype.constructInhibitorAxonArrayBuffer = function(axon) {
+		this.allAxons.push(axon);
+		var vertices = axon.inhibitorGeom.vertices;
+		var numVerts = vertices.length;
+
+		// &&&&&&&&&&&&&&&&&&&&&^^^^^^^^^^^^^^^^^^^^^
+		// var opacity = THREE.Math.randFloat(0.001, 0.1);
+
+		for (var i = 0; i < numVerts; i++) {
+
+			this.inhibitorAxonPositions.push(vertices[i].x, vertices[i].y, vertices[i].z);
+
+			if (i < numVerts - 1) {
+				var idx = this.inhibitorAxonNextPositionsIndex;
+				this.inhibitorAxonIndices.push(idx, idx + 1);
+
+				var opacity = THREE.Math.randFloat(0.002, 0.2);
+				this.shaderAttributes.opacityAttr.value.push(opacity, opacity);
+
+			}
+
+			this.inhibitorAxonNextPositionsIndex += 1;
+		}
+	};
+
+	NeuralNetwork.prototype.constructAxonArrayBuffer = function(axon) {
+		if( axon.type === INHIBITOR)
+			this.constructInhibitorAxonArrayBuffer(axon);
+		else
+			this.constructExcitorAxonArrayBuffer(axon);
 	};
 
 	NeuralNetwork.prototype.releaseSignalAt = function(neuron) {
@@ -1085,8 +1166,9 @@
 		this.inhibitorMaterial.color.setHex(this.inhibitorColor);
 
 
-		this.shaderUniforms.color.value.set(this.axonColor);
-		this.shaderUniforms.opacityMultiplier.value = this.axonOpacityMultiplier;
+		this.excitorShaderUniforms.color.value.set(this.excitorAxonColor);
+		this.inhibitorShaderUniforms.color.value.set(this.inhibitorAxonColor);
+		this.excitorShaderUniforms.opacityMultiplier.value = this.axonOpacityMultiplier;
 
 		this.particlePool.updateSettings();
 	};
@@ -1218,7 +1300,8 @@
 	gui_settings.addColor(neuralNet.particlePool, 'pColor').name('Signal Color');
 	gui_settings.addColor(neuralNet, 'excitorColor').name('Excitor Color');
 	gui_settings.addColor(neuralNet, 'inhibitorColor').name('Inhibitor Color');
-	gui_settings.addColor(neuralNet, 'axonColor').name('Axon Color');
+	gui_settings.addColor(neuralNet, 'excitorAxonColor').name('Excitor Axon Color');
+	gui_settings.addColor(neuralNet, 'inhibitorAxonColor').name('Inhibitor Axon Color');
 	gui_settings.addColor(scene_settings, 'bgColor').name('Background');
 
 	gui_info.open();
