@@ -321,13 +321,13 @@
 		//checks what type of neuron sent the signal to call the correct build function
 		if (from.type == EXCITOR){
 			to.buildExcitor();
-			logger.logInput(clock, from, to, EXCITOR);
+			//logger.logInput(clock, from, to, EXCITOR);
 		}
 		else if (from.type == INHIBITOR) {
 			//console.log("firer = "+this.axon.neuronA.type+" reciever = "+this.axon.neuronB.type);
 			//console.log("energy before = "+this.axon.neuronB.acc);
 			to.buildInhibitor();
-			logger.logInput(clock, from, to, INHIBITOR);
+			//logger.logInput(clock, from, to, INHIBITOR);
 			//console.log("energy after = "+this.axon.neuronB.acc);
 		}
 
@@ -576,32 +576,52 @@
 		
 	}
 	Logger.prototype.flushFiring = function(){
-		this.sendToServer(this.entF, this.urlFire);
-		this.sendToServer(this.entP, this.urlPot);
-		this.entF = [];
-		this.entP = [];
+		if(this.entF.length > 0){
+			this.sendToServer(this.entF, this.urlFire);
+			this.sendToServer(this.entP, this.urlPot);
+			this.entF = [];
+			this.entP = [];
+		}
 	}
 	Logger.prototype.flushInput = function(){
-		this.sendToServer(this.entI, this.urlInput);
-		this.entI = [];
+		if(this.entI.length > 0){
+			this.sendToServer(this.entI, this.urlInput);
+			this.entI = [];
+		}
 	}
 	Logger.prototype.flushMiss = function(){
-		this.sendToServer(this.entM, this.urlMiss);
-		this.entM = [];
+		if(this.entM.length > 0){	
+			this.sendToServer(this.entM, this.urlMiss);
+			this.entM = [];
+		}
 	}
 	Logger.prototype.flushRep = function(){
-		this.sendToServer(this.entR, this.urlRep);
-		this.entR = [];
+		if(this.entR.length > 0){
+			this.sendToServer(this.entR, this.urlRep);
+			this.entR = [];
+		}
 	}
 	Logger.prototype.flushCon = function(){
-		this.sendToServer(this.entC, this.urlCon);
-		this.sendToServer(this.entW, this.urlConW);
-		this.entC = [];
-		this.entW = [];
+		if(this.entC.length > 0){
+			this.sendToServer(this.entC, this.urlCon);
+			this.sendToServer(this.entW, this.urlConW);
+			this.entC = [];
+			this.entW = [];
+		}
 	}
 	Logger.prototype.flushRegion = function(){
-		this.sendToServer(this.entRe, this.urlRegion);
-		this.entRe = [];
+		if(this.entRe.length > 0){
+			this.sendToServer(this.entRe, this.urlRegion);
+			this.entRe = [];
+		}
+	}
+	Logger.prototype.flushAll = function(){
+		this.flushCon();
+		this.flushFiring();
+		this.flushInput();
+		this.flushMiss();
+		this.flushRegion();
+		this.flushRep();
 	}
 	Logger.prototype.sendToServer = function(entries, url){
 		$.ajax({
@@ -774,7 +794,7 @@
 		var timeSinceLastUpdate = currentTime - this.lastRegenUpdate;
 		if(timeSinceLastUpdate >= astrocyte_settings.frequency){
 			//astrocyte_settings.replenishEnergy += this.regenSign*astrocyte_settings.amplitude;
-			astrocyte_settings.replenishEnergy = 0.05;
+			astrocyte_settings.replenishEnergy = 0.08;
 			this.lastRegenUpdate = currentTime;
 			if(astrocyte_settings.replenishEnergy > astrocyte_settings.maxThreshold){
 				astrocyte_settings.replenishEnergy = astrocyte_settings.maxThreshold; 
@@ -995,7 +1015,10 @@
 	};
 
 	NeuralNetwork.prototype.update = function(currentTime) {
+		if (currentTime == 100000){
+			this.logger.flushAll()
 
+		}
 		if (!this.initialized) return;
 		this.updateRegeneration(currentTime);
 
@@ -1216,7 +1239,7 @@
 		minEnergy: 0.0, // default min
 		maxEnergy: 1.0, // default max
 		fireEnergy: 0.125, // the amount that depletes on firing
-		replenishEnergy: 0.05, // amount of energy astrocyte regenerates 
+		replenishEnergy: 0.08, // amount of energy astrocyte regenerates 
 		regenerationTime: 150, // time needed for energy to regenerate in milliseconds
 		//minThreshold: 0.125, // energy level at which the astrocyte starts regenerating energy
 		minThreshold: 0.02, //
@@ -1332,10 +1355,13 @@
 		renderer.setClearColor(scene_settings.bgColor, 1);
 
 		if (!scene_settings.pause) {
-			clock.inc(1);
-			neuralNet.update(clock.time());
-			updateGuiInfo();
-
+			if (clock.time() >= 100000){
+				scene_settings.pause = true;
+			} else {
+				clock.inc(1);
+				neuralNet.update(clock.time());
+				updateGuiInfo();
+			}
 		}
 
 		renderer.render(scene, camera);
