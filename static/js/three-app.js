@@ -1110,7 +1110,7 @@
 	// ---- renderer
 	renderer = new THREE.WebGLRenderer({
 		antialias: true,
-		alpha: false
+		alpha: true
 	});
 	renderer.setSize(window.innerWidth, window.innerHeight);
 	container.appendChild(renderer.domElement);
@@ -1165,18 +1165,18 @@
 
 	var gui_info = gui.addFolder('Info');
 	gui_info.add(neuralNet, 'numNeurons').name('Neurons');
-	gui_info.add(neuralNet, 'numNeurons').name('Astrocytes');
+	gui_info.add(neuralNet, 'numNeurons').name('Energy Pools');
 	gui_info.add(neuralNet, 'numAxons').name('Axons');
-	gui_info.add(neuralNet, 'numSignals', 0, neuralNet.numAxons).name('Signals');
-	gui_info.add(neuralNet, 'numActiveAstrocytes', 0, neuralNet.numActiveAstrocytes).name('Active Astrocytes');
-	gui_info.add(astrocyte_settings, 'minEnergy').name('Pool Min energy');
-	gui_info.add(astrocyte_settings, 'maxEnergy').name('Pool Max energy');
-	gui_info.add(astrocyte_settings, 'fireEnergy').name('Pool Firing Thresh');
+	gui_info.add(neuralNet, 'numSignals', 0, neuralNet.numAxons).name('Current action potentials)');
+	gui_info.add(neuralNet, 'numActiveAstrocytes', 0, neuralNet.numActiveAstrocytes).name('Not empty energy pools');
+	gui_info.add(astrocyte_settings, 'minEnergy').name('Min in energy pool');
+	gui_info.add(astrocyte_settings, 'maxEnergy').name('Min in energy pool');
+	gui_info.add(astrocyte_settings, 'fireEnergy').name('Min energy for firing');
 	gui_info.autoListen = false;
 
 	var gui_settings = gui.addFolder('Network Settings');
 	gui_settings.add(neuralNet, 'currentMaxSignals', 0, neuralNet.limitSignals).name('Max Signals');
-	gui_settings.add(network_settings, 'AxonDistance', 0, 20).name('Max Axon Distance Excitor');
+	gui_settings.add(network_settings, 'AxonDistance', 0, 20).name('Max Axon Distance');
 	//gui_settings.add(network_settings, 'AxonDistanceInhibitor', 0, 20).name('Max Axon Distance Inhibitor');
 	gui_settings.add(network_settings, 'NeuronConnection', 0, 20).name('Max Neuron Connections');
 	//gui_settings.add(network_settings, 'NeuronConnectionInhibitor', 0, 20).name('Max Inhibitor Neuron Connections');
@@ -1185,14 +1185,14 @@
 	gui_settings.add(network_settings, 'reload'); 
 	gui_settings.open();
 
-	var gui_settings = gui.addFolder('Astrocyte Settings');
+	var gui_settings = gui.addFolder('Energy Pool Settings');
 	//gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Threshold for energy regeneration');
-	gui_settings.add(astrocyte_settings, 'replenishEnergy', 0, 1).name('Replenish energy amount').listen();
-	gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 500).name('Energy regeneration time in ms');
+	gui_settings.add(astrocyte_settings, 'replenishEnergy', 0, 1).name('Replenish rate').listen();
+	gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 500).name('Regen. time (ms)');
 	gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Minimum Threshold');
 	gui_settings.add(astrocyte_settings, 'maxThreshold', 0, 1).name('Maximum Threshold');
-	gui_settings.add(astrocyte_settings, 'frequency', 0, 1000).name('frequency for change in energy in ms');
-	gui_settings.add(astrocyte_settings, 'amplitude', 0, 1).name('Amplitude');
+	gui_settings.add(astrocyte_settings, 'frequency', 0, 1000).name('Freq. of rate change');
+	gui_settings.add(astrocyte_settings, 'amplitude', 0, 1).name('Amp. of rate change');
 	gui_settings.open();
 
 	// controller.onFinishChange(function(value){
@@ -1241,7 +1241,7 @@
 
 
 		requestAnimationFrame(run);
-		renderer.setClearColor(scene_settings.bgColor, 1);
+		renderer.setClearColor(scene_settings.bgColor, 1); // change to 0 for white background
 
 		if (!scene_settings.pause) {
 			clock.inc(1);
