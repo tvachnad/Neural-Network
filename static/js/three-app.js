@@ -525,6 +525,7 @@
 		this.urlCon  = "connection";
 		this.urlConW = "conweights";
 		this.urlRegion = "region";
+		this.urlEnergy = "energy";
 		this.entF = []; //firings
 		this.entI = []; //inputs
 		this.entP = []; //potential energy
@@ -533,6 +534,7 @@
 		this.entC = []; //connection (binary)
 		this.entW = []; //connection weight
 		this.entRe = [];
+		this.entEnergy = [];
 	}
 	Logger.prototype.logFiring = function(time, neuron, potential){
 		this.entF.push(time.toString() + "," + neuron.toString() + ", 1\n")
@@ -558,6 +560,13 @@
 		this.entR.push(time.toString() + "," + energy.toString() + "\n");
 		if(this.entR.length >= 20){
 			this.flushRep();
+		}
+	}
+
+	Logger.prototype.logEnergy = function(time, astrocytes, totalEnergy){
+		this.entEnergy.push(time.toString() + "," + astrocytes.toString() + "," + totalEnergy.toString() + "\n");
+		if(this.entEnergy.length >= 20){
+			this.flushEnergy();
 		}
 	}
 	Logger.prototype.logCon = function(n1, n2, weight){
@@ -615,6 +624,12 @@
 			this.entRe = [];
 		}
 	}
+	Logger.prototype.flushEnergy = function(){
+		if(this.entEnergy.length > 0){
+			this.sendToServer(this.entEnergy, this.urlEnergy);
+			this.entEnergy = [];
+		}
+	}
 	Logger.prototype.flushAll = function(){
 		this.flushCon();
 		this.flushFiring();
@@ -622,6 +637,7 @@
 		this.flushMiss();
 		this.flushRegion();
 		this.flushRep();
+		this.flushEnergy();
 	}
 	Logger.prototype.sendToServer = function(entries, url){
 		$.ajax({
@@ -1096,7 +1112,7 @@
 		this.particlePool.update();
 
 		// update info for GUI
-		this.updateInfo();
+		this.updateInfo(currentTime);
 
 	};
 
@@ -1166,16 +1182,23 @@
 		}
 	};
 
-	NeuralNetwork.prototype.updateInfo = function() {
+	NeuralNetwork.prototype.updateInfo = function(currentTime) {
 		this.numNeurons = this.allNeurons.length;
 		this.numAxons = this.allAxons.length;
 		this.numSignals = this.allSignals.length;
 		var activeAstros = 0;
+		var totalEnergy = 0;
 		for (i = 0; i < this.numNeurons; i++) {
-			if (this.allNeurons[i].astrocyte.availableEnergy > 0)
+			var astrocyte = this.allNeurons[i].astrocyte;
+			totalEnergy += astrocyte.availableEnergy;
+			if (astrocyte.hasEnergy())
 				activeAstros++;
 		}
 		this.numActiveAstrocytes = activeAstros;
+
+		if(this.logger != null){
+			this.logger.logEnergy(currentTime, activeAstros, totalEnergy);
+		}
 
 
 	};
