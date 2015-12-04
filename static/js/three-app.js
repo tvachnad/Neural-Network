@@ -1161,7 +1161,7 @@
 	// ---------- GUI ----------
 
 	var gui = new dat.GUI();
-	gui.width = 400;
+	gui.width = 415;
 
 	var gui_info = gui.addFolder('Info');
 	gui_info.add(neuralNet, 'numNeurons').name('Neurons');
@@ -1183,7 +1183,6 @@
 	gui_settings.add(neuralNet, 'signalMinSpeed', 0.01, 0.1, 0.01).name('Signal Min Speed');
 	gui_settings.add(neuralNet, 'signalMaxSpeed', 0.01, 0.1, 0.01).name('Signal Max Speed');
 	gui_settings.add(network_settings, 'reload'); 
-	gui_settings.open();
 
 	var gui_settings = gui.addFolder('Energy Pool Settings');
 	//gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Threshold for energy regeneration');
@@ -1193,7 +1192,6 @@
 	gui_settings.add(astrocyte_settings, 'maxThreshold', 0, 1).name('Maximum Threshold');
 	gui_settings.add(astrocyte_settings, 'frequency', 0, 1000).name('Freq. of rate change');
 	gui_settings.add(astrocyte_settings, 'amplitude', 0, 1).name('Amp. of rate change');
-	gui_settings.open();
 
 	// controller.onFinishChange(function(value){
 	// 	//clearInterval(functionRegeneration);
@@ -1216,9 +1214,8 @@
 	gui_settings.addColor(neuralNet, 'axonColor').name('Axon Color');
 	gui_settings.addColor(scene_settings, 'bgColor').name('Background');
 
-	gui_info.open();
+	//gui_info.open();
 	// a_settings.open();
-	gui_settings.open();
 
 	function updateNeuralNetworkSettings() {
 		neuralNet.updateSettings();
@@ -1241,7 +1238,7 @@
 
 
 		requestAnimationFrame(run);
-		renderer.setClearColor(scene_settings.bgColor, 1); // change to 0 for white background
+		renderer.setClearColor(scene_settings.bgColor, 1); // change to 0 for white background (looks bad)
 
 		if (!scene_settings.pause) {
 			clock.inc(1);
