@@ -1166,8 +1166,8 @@
 	var gui_info = gui.addFolder('Network information');
 	gui_info.add(neuralNet, 'numNeurons').name('Neurons');
 	gui_info.add(neuralNet, 'numNeurons').name('Energy Pools');
-	gui_info.add(neuralNet, 'numAxons').name('Axons');
-	gui_info.add(neuralNet, 'numSignals', 0, neuralNet.numAxons).name('Current action potentials)');
+	gui_info.add(neuralNet, 'numAxons').name('Axons (connections)');
+	gui_info.add(neuralNet, 'numSignals', 0, neuralNet.numAxons).name('Current action potentials');
 	gui_info.add(neuralNet, 'numActiveAstrocytes', 0, neuralNet.numActiveAstrocytes).name('Viable energy pools');
 	gui_info.add(astrocyte_settings, 'minEnergy').name('Min in energy pool');
 	gui_info.add(astrocyte_settings, 'maxEnergy').name('Max in energy pool');
