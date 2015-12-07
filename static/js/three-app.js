@@ -47,8 +47,9 @@
 	Neuron.prototype.connectNeuronOneDirection = function(neuronB) {
 
 		var neuronA = this;
+		var type = neuronA.type;
 		// create axon and establish connection from A to B
-		var axon = new Axon(neuronA, neuronB);
+		var axon = new Axon(neuronA, neuronB, type);
 		neuronA.connection.push(new Connection(axon, 'A'));
 		neuronA.neurons.push(neuronB);
 		return axon;
@@ -60,8 +61,9 @@
 	Neuron.prototype.connectNeuronTwoDirection = function(neuronB) {
 
 		var neuronA = this;
+		var type = neuronA.type;
 		// create axon and establish connection in both directions
-		var axon = new Axon(neuronA, neuronB);
+		var axon = new Axon(neuronA, neuronB, type);
 		neuronA.connection.push(new Connection(axon, 'A'));
 		neuronB.connection.push(new Connection(axon, 'B'));
 		neuronA.neurons.push(neuronB);
@@ -319,13 +321,13 @@
 		//checks what type of neuron sent the signal to call the correct build function
 		if (from.type == EXCITOR){
 			to.buildExcitor();
-			logger.logInput(clock, to.idx, EXCITOR);
+			//logger.logInput(clock, from, to, EXCITOR);
 		}
 		else if (from.type == INHIBITOR) {
 			//console.log("firer = "+this.axon.neuronA.type+" reciever = "+this.axon.neuronB.type);
 			//console.log("energy before = "+this.axon.neuronB.acc);
 			to.buildInhibitor();
-			logger.logInput(clock, to.idx, INHIBITOR);
+			//logger.logInput(clock, from, to, INHIBITOR);
 			//console.log("energy after = "+this.axon.neuronB.acc);
 		}
 
@@ -482,17 +484,24 @@
 
 	// Axon ------------------------------------------------------------------
 
-	function Axon(neuronA, neuronB) {
+	function Axon(neuronA, neuronB, type) {
 
 		this.weight = 1;
+		this.type = type;
 
 		this.neuronA = neuronA;
 		this.neuronB = neuronB;
 		this.cpLength = neuronA.distanceTo(neuronB);
 		THREE.LineCurve3.call(this, this.neuronA, this.neuronB);
 
-		this.geom = new THREE.Geometry();
-		this.geom.vertices.push(this.neuronA, this.neuronB);
+		if(type === INHIBITOR){
+			this.inhibitorGeom = new THREE.Geometry();
+			this.inhibitorGeom.vertices.push(this.neuronA, this.neuronB);
+		}
+		else{
+			this.excitorGeom = new THREE.Geometry();
+			this.excitorGeom.vertices.push(this.neuronA, this.neuronB);
+		}
 
 	}
 
@@ -515,6 +524,8 @@
 		this.urlRep  = "replenish";
 		this.urlCon  = "connection";
 		this.urlConW = "conweights";
+		this.urlRegion = "region";
+		this.urlEnergy = "energy";
 		this.entF = []; //firings
 		this.entI = []; //inputs
 		this.entP = []; //potential energy
@@ -522,6 +533,8 @@
 		this.entR = []; //replenish energy
 		this.entC = []; //connection (binary)
 		this.entW = []; //connection weight
+		this.entRe = [];
+		this.entEnergy = [];
 	}
 	Logger.prototype.logFiring = function(time, neuron, potential){
 		this.entF.push(time.toString() + "," + neuron.toString() + ", 1\n")
@@ -530,8 +543,9 @@
 			this.flushFiring();
 		}
 	}
-	Logger.prototype.logInput = function(time, neuron, type){
-		this.entI.push(time.toString() + "," + neuron.toString() + "," + type.toString() + "\n")
+	Logger.prototype.logInput = function(time, from, to, type){
+		this.entI.push(time.toString() + "," + from.idx.toString() + "," 
+			+ to.idx.toString() + "," + type.toString() + "\n")
 		if(this.entI.length >= 1000){
 			this.flushInput();
 		}
@@ -543,9 +557,16 @@
 		}
 	}
 	Logger.prototype.logRep = function(time, energy){
-		this.entR.push(time.toString() + "," + energy.toString());
-		if(this.entR.length >= 200){
+		this.entR.push(time.toString() + "," + energy.toString() + "\n");
+		if(this.entR.length >= 20){
 			this.flushRep();
+		}
+	}
+
+	Logger.prototype.logEnergy = function(time, astrocytes, totalEnergy){
+		this.entEnergy.push(time.toString() + "," + astrocytes.toString() + "," + totalEnergy.toString() + "\n");
+		if(this.entEnergy.length >= 20){
+			this.flushEnergy();
 		}
 	}
 	Logger.prototype.logCon = function(n1, n2, weight){
@@ -555,29 +576,68 @@
 			this.flushCon();
 		}
 	}
+	Logger.prototype.logRegion = function(neuron, region){
+		this.entRe.push(neuron.toString() + "," + region.toString() + "\n");
+		if(this.entRe.length >= 200){
+			this.sendToServer(this.entRe, this.urlRegion);
+			this.entRe = [];
+		}
+		
+	}
 	Logger.prototype.flushFiring = function(){
-		this.sendToServer(this.entF, this.urlFire);
-		this.sendToServer(this.entP, this.urlPot);
-		this.entF = [];
-		this.entP = [];
+		if(this.entF.length > 0){
+			this.sendToServer(this.entF, this.urlFire);
+			this.sendToServer(this.entP, this.urlPot);
+			this.entF = [];
+			this.entP = [];
+		}
 	}
 	Logger.prototype.flushInput = function(){
-		this.sendToServer(this.entI, this.urlInput);
-		this.entI = [];
+		if(this.entI.length > 0){
+			this.sendToServer(this.entI, this.urlInput);
+			this.entI = [];
+		}
 	}
 	Logger.prototype.flushMiss = function(){
-		this.sendToServer(this.entM, this.urlMiss);
-		this.entM = [];
+		if(this.entM.length > 0){	
+			this.sendToServer(this.entM, this.urlMiss);
+			this.entM = [];
+		}
 	}
 	Logger.prototype.flushRep = function(){
-		this.sendToServer(this.entR, this.urlRep);
-		this.entR = [];
+		if(this.entR.length > 0){
+			this.sendToServer(this.entR, this.urlRep);
+			this.entR = [];
+		}
 	}
 	Logger.prototype.flushCon = function(){
-		this.sendToServer(this.entC, this.urlCon);
-		this.sendToServer(this.entW, this.urlConW);
-		this.entC = [];
-		this.entW = [];
+		if(this.entC.length > 0){
+			this.sendToServer(this.entC, this.urlCon);
+			this.sendToServer(this.entW, this.urlConW);
+			this.entC = [];
+			this.entW = [];
+		}
+	}
+	Logger.prototype.flushRegion = function(){
+		if(this.entRe.length > 0){
+			this.sendToServer(this.entRe, this.urlRegion);
+			this.entRe = [];
+		}
+	}
+	Logger.prototype.flushEnergy = function(){
+		if(this.entEnergy.length > 0){
+			this.sendToServer(this.entEnergy, this.urlEnergy);
+			this.entEnergy = [];
+		}
+	}
+	Logger.prototype.flushAll = function(){
+		this.flushCon();
+		this.flushFiring();
+		this.flushInput();
+		this.flushMiss();
+		this.flushRegion();
+		this.flushRep();
+		this.flushEnergy();
 	}
 	Logger.prototype.sendToServer = function(entries, url){
 		$.ajax({
@@ -661,16 +721,33 @@
 
 		// axon
 		this.axonOpacityMultiplier = 1.0;
-		this.axonColor = 0x0099ff;
-		this.axonGeom = new THREE.BufferGeometry();
-		this.axonPositions = [];
-		this.axonIndices = [];
-		this.axonNextPositionsIndex = 0;
+		this.excitorAxonColor = 0x0099ff;
+		this.excitorAxonGeom = new THREE.BufferGeometry();
+		this.excitorAxonPositions = [];
+		this.excitorAxonIndices = [];
+		this.excitorAxonNextPositionsIndex = 0;
 
-		this.shaderUniforms = {
+		this.excitorShaderUniforms = {
 			color: {
 				type: 'c',
-				value: new THREE.Color(this.axonColor)
+				value: new THREE.Color(this.excitorAxonColor)
+			},
+			opacityMultiplier: {
+				type: 'f',
+				value: 1.0
+			}
+		};
+
+		this.inhibitorAxonColor = 0xff0000;
+		this.inhibitorAxonGeom = new THREE.BufferGeometry();
+		this.inhibitorAxonPositions = [];
+		this.inhibitorAxonIndices = [];
+		this.inhibitorAxonNextPositionsIndex = 0;
+
+		this.inhibitorShaderUniforms = {
+			color: {
+				type: 'c',
+				value: new THREE.Color(this.inhibitorAxonColor)
 			},
 			opacityMultiplier: {
 				type: 'f',
@@ -862,7 +939,12 @@
 		scene.add(this.excitorParticles);
 		this.inhibitorParticles = new THREE.PointCloud(this.inhibitorsGeom, this.inhibitorMaterial);
 		scene.add(this.inhibitorParticles);
-
+		
+		for(var i = 0; i < this.allNeurons.length; i++){
+			n = this.allNeurons[i];
+			this.logger.logRegion(i+1, n.region);
+		}
+		this.logger.flushRegion();
 		//this.printRegions();
 
 	};
@@ -884,17 +966,25 @@
 			} 
 						
 			// *** attirbute size must bigger than its content ***
-			var axonIndices = new Uint32Array(this.axonIndices.length);
-			var axonPositions = new Float32Array(this.axonPositions.length);
+			var excitorAxonIndices = new Uint32Array(this.excitorAxonIndices.length);
+			var excitorAxonPositions = new Float32Array(this.excitorAxonPositions.length);
 			var axonOpacities = new Float32Array(this.shaderAttributes.opacityAttr.value.length);
 
+			var inhibitorAxonIndices = new Uint32Array(this.inhibitorAxonIndices.length);
+			var inhibitorAxonPositions = new Float32Array(this.inhibitorAxonPositions.length);
+
 			// transfer temp-array to arrayBuffer
-			transferToArrayBuffer(this.axonIndices, axonIndices);
-			transferToArrayBuffer(this.axonPositions, axonPositions);
+			transferToArrayBuffer(this.excitorAxonIndices, excitorAxonIndices);
+			transferToArrayBuffer(this.excitorAxonPositions, excitorAxonPositions);
 			transferToArrayBuffer(this.shaderAttributes.opacityAttr.value, axonOpacities);
-			this.axonIndices = [];
-			this.axonPositions = [];
+			this.excitorAxonIndices = [];
+			this.excitorAxonPositions = [];
 			this.axonOpacities = [];
+
+			transferToArrayBuffer(this.inhibitorAxonIndices, inhibitorAxonIndices);
+			transferToArrayBuffer(this.inhibitorAxonPositions, inhibitorAxonPositions);
+			this.inhibitorAxonIndices = [];
+			this.inhibitorAxonPositions = [];
 
 			function transferToArrayBuffer(fromArr, toArr) {
 				for (i=0; i<toArr.length; i++) {
@@ -902,14 +992,18 @@
 				}
 			}
 
-			this.axonGeom.addAttribute( 'index', new THREE.BufferAttribute(axonIndices, 1) );
-			this.axonGeom.addAttribute( 'position', new THREE.BufferAttribute(axonPositions, 3) );
-			this.axonGeom.addAttribute( 'opacityAttr', new THREE.BufferAttribute(axonOpacities, 1) );
+			this.excitorAxonGeom.addAttribute( 'index', new THREE.BufferAttribute(excitorAxonIndices, 1) );
+			this.excitorAxonGeom.addAttribute( 'position', new THREE.BufferAttribute(excitorAxonPositions, 3) );
+			this.excitorAxonGeom.addAttribute( 'opacityAttr', new THREE.BufferAttribute(axonOpacities, 1) );
+
+			this.inhibitorAxonGeom.addAttribute( 'index', new THREE.BufferAttribute(inhibitorAxonIndices, 1) );
+			this.inhibitorAxonGeom.addAttribute( 'position', new THREE.BufferAttribute(inhibitorAxonPositions, 3) );
+			this.inhibitorAxonGeom.addAttribute( 'opacityAttr', new THREE.BufferAttribute(axonOpacities, 1) );
 
 
 			// axons mesh
-			this.shaderMaterial = new THREE.ShaderMaterial( {
-				uniforms:       this.shaderUniforms,
+			this.excitorShaderMaterial = new THREE.ShaderMaterial( {
+				uniforms:       this.excitorShaderUniforms,
 				attributes:     this.shaderAttributes,
 				vertexShader:   document.getElementById('vertexshader-axon').textContent,
 				fragmentShader: document.getElementById('fragmentshader-axon').textContent,
@@ -918,14 +1012,28 @@
 				transparent:    true
 			});
 
-		this.axonMesh = new THREE.Line(this.axonGeom, this.shaderMaterial, THREE.LinePieces);
+			this.inhibitorShaderMaterial = new THREE.ShaderMaterial( {
+				uniforms:       this.inhibitorShaderUniforms,
+				attributes:     this.shaderAttributes,
+				vertexShader:   document.getElementById('vertexshader-axon').textContent,
+				fragmentShader: document.getElementById('fragmentshader-axon').textContent,
+				blending:       THREE.AdditiveBlending,
+				// depthTest:      false,
+				transparent:    true
+			});
 
-		scene.add(this.axonMesh);
+		this.excitorAxonMesh = new THREE.Line(this.excitorAxonGeom, this.excitorShaderMaterial, THREE.LinePieces);
+		this.inhibitorAxonMesh = new THREE.Line(this.excitorAxonGeom, this.inhibitorShaderMaterial, THREE.LinePieces);
 
+		scene.add(this.excitorAxonMesh);
+		scene.add(this.inhibitorAxonMesh);
 	};
 
 	NeuralNetwork.prototype.update = function(currentTime) {
+		if (currentTime == 100000){
+			this.logger.flushAll()
 
+		}
 		if (!this.initialized) return;
 		this.updateRegeneration(currentTime);
 
@@ -987,46 +1095,30 @@
 
 		}
 
-		// update and remove signals
-		// this.allSignals.map(function(signal){
-		// 	signal.travel();
-		// 	if (!signal.alive)
-		// 		signal.freeParticle();
-		// })
-		// this.allSignals = this.allSignals.filter(function(signal)
-		// {
-		// 	return signal.alive;
-		// })
+		self = this;
+		this.allSignals.map(function(signal){
+			signal.travel(currentTime, self.logger);
+			if (!signal.alive)
+				signal.freeParticle();
+		});
+		this.allSignals = this.allSignals.filter(function(signal)
+		{
+			return signal.alive;
+		});
 
-		// a reverse refactorization
-		for (var j = this.allSignals.length - 1; j >= 0; j--) {
-			var s = this.allSignals[j];
-			s.travel(currentTime, this.logger);
-
-			if (!s.alive) {
-				s.particle.free();
-				for (var k = this.allSignals.length - 1; k >= 0; k--) {
-					if (s === this.allSignals[k]) {
-						this.allSignals.splice(k, 1);
-						break;
-					}
-				}
-			}
-
-		}
 
 		// update particle pool vertices
 		this.particlePool.update();
 
 		// update info for GUI
-		this.updateInfo();
+		this.updateInfo(currentTime);
 
 	};
 
 	// add vertices to temp-arrayBuffer, generate temp-indexBuffer and temp-opacityArrayBuffer 
-	NeuralNetwork.prototype.constructAxonArrayBuffer = function(axon) {
+	NeuralNetwork.prototype.constructExcitorAxonArrayBuffer = function(axon) {
 		this.allAxons.push(axon);
-		var vertices = axon.geom.vertices;
+		var vertices = axon.excitorGeom.vertices;
 		var numVerts = vertices.length;
 
 		// &&&&&&&&&&&&&&&&&&&&&^^^^^^^^^^^^^^^^^^^^^
@@ -1034,19 +1126,51 @@
 
 		for (var i = 0; i < numVerts; i++) {
 
-			this.axonPositions.push(vertices[i].x, vertices[i].y, vertices[i].z);
+			this.excitorAxonPositions.push(vertices[i].x, vertices[i].y, vertices[i].z);
 
 			if (i < numVerts - 1) {
-				var idx = this.axonNextPositionsIndex;
-				this.axonIndices.push(idx, idx + 1);
+				var idx = this.excitorAxonNextPositionsIndex;
+				this.excitorAxonIndices.push(idx, idx + 1);
 
 				var opacity = THREE.Math.randFloat(0.002, 0.2);
 				this.shaderAttributes.opacityAttr.value.push(opacity, opacity);
 
 			}
 
-			this.axonNextPositionsIndex += 1;
+			this.excitorAxonNextPositionsIndex += 1;
 		}
+	};
+
+		NeuralNetwork.prototype.constructInhibitorAxonArrayBuffer = function(axon) {
+		this.allAxons.push(axon);
+		var vertices = axon.inhibitorGeom.vertices;
+		var numVerts = vertices.length;
+
+		// &&&&&&&&&&&&&&&&&&&&&^^^^^^^^^^^^^^^^^^^^^
+		// var opacity = THREE.Math.randFloat(0.001, 0.1);
+
+		for (var i = 0; i < numVerts; i++) {
+
+			this.inhibitorAxonPositions.push(vertices[i].x, vertices[i].y, vertices[i].z);
+
+			if (i < numVerts - 1) {
+				var idx = this.inhibitorAxonNextPositionsIndex;
+				this.inhibitorAxonIndices.push(idx, idx + 1);
+
+				var opacity = THREE.Math.randFloat(0.002, 0.2);
+				this.shaderAttributes.opacityAttr.value.push(opacity, opacity);
+
+			}
+
+			this.inhibitorAxonNextPositionsIndex += 1;
+		}
+	};
+
+	NeuralNetwork.prototype.constructAxonArrayBuffer = function(axon) {
+		if( axon.type === INHIBITOR)
+			this.constructInhibitorAxonArrayBuffer(axon);
+		else
+			this.constructExcitorAxonArrayBuffer(axon);
 	};
 
 	NeuralNetwork.prototype.releaseSignalAt = function(neuron) {
@@ -1057,16 +1181,23 @@
 		}
 	};
 
-	NeuralNetwork.prototype.updateInfo = function() {
+	NeuralNetwork.prototype.updateInfo = function(currentTime) {
 		this.numNeurons = this.allNeurons.length;
 		this.numAxons = this.allAxons.length;
 		this.numSignals = this.allSignals.length;
 		var activeAstros = 0;
+		var totalEnergy = 0;
 		for (i = 0; i < this.numNeurons; i++) {
-			if (this.allNeurons[i].astrocyte.availableEnergy > 0)
+			var astrocyte = this.allNeurons[i].astrocyte;
+			totalEnergy += astrocyte.availableEnergy;
+			if (astrocyte.hasEnergy())
 				activeAstros++;
 		}
 		this.numActiveAstrocytes = activeAstros;
+
+		if(this.logger != null){
+			this.logger.logEnergy(currentTime, activeAstros, totalEnergy);
+		}
 
 
 	};
@@ -1080,8 +1211,9 @@
 		this.inhibitorMaterial.color.setHex(this.inhibitorColor);
 
 
-		this.shaderUniforms.color.value.set(this.axonColor);
-		this.shaderUniforms.opacityMultiplier.value = this.axonOpacityMultiplier;
+		this.excitorShaderUniforms.color.value.set(this.excitorAxonColor);
+		this.inhibitorShaderUniforms.color.value.set(this.inhibitorAxonColor);
+		this.excitorShaderUniforms.opacityMultiplier.value = this.axonOpacityMultiplier;
 
 		this.particlePool.updateSettings();
 	};
@@ -1129,8 +1261,8 @@
 		minEnergy: 0.0, // default min
 		maxEnergy: 1.0, // default max
 		fireEnergy: 0.125, // the amount that depletes on firing
-		replenishEnergy: 0.05, // amount of energy astrocyte regenerates 
-		regenerationTime: 20, // time needed for energy to regenerate in milliseconds
+		replenishEnergy: 0.08, // amount of energy astrocyte regenerates 
+		regenerationTime: 150, // time needed for energy to regenerate in milliseconds
 		//minThreshold: 0.125, // energy level at which the astrocyte starts regenerating energy
 		minThreshold: 0.02, //
 		maxThreshold: 0.08, //
@@ -1139,7 +1271,7 @@
 	};
 
 	var network_settings = {
-		firing_threshold: 0.50, // neuron fires when reaching this amount.
+		firing_threshold: 0.20, // neuron fires when reaching this amount.
 		signal_weight: 0.40, // energy of neuron increases by this amount per signal.
 		AxonDistance: 10, //default
 		//AxonDistanceInhibitor: 4, //default
@@ -1241,10 +1373,13 @@
 		renderer.setClearColor(scene_settings.bgColor, 1); // change to 0 for white background (looks bad)
 
 		if (!scene_settings.pause) {
-			clock.inc(1);
-			neuralNet.update(clock.time());
-			updateGuiInfo();
-
+			if (clock.time() >= 100000){
+				scene_settings.pause = true;
+			} else {
+				clock.inc(1);
+				neuralNet.update(clock.time());
+				updateGuiInfo();
+			}
 		}
 
 		renderer.render(scene, camera);

@@ -12,8 +12,10 @@ class logserver:
 	potfile  = ""
 	missfile = ""
 	repfile  = ""
+	regionfile = ""
 	confile  = ""
 	conwfile = ""
+	energyfile = ""
 	
 	def logFiring(self, log):
 		self.writeLog(self.firefile, log)
@@ -29,12 +31,18 @@ class logserver:
 	
 	def logReplenish(self, log):
 		self.writeLog(self.repfile, log)
+	
+	def logRegion(self, log):
+		self.writeLog(self.regionfile, log)
 		
 	def logConnection(self, log):
 		self.writeLog(self.confile, log)
 	
 	def logConW(self, log):
 		self.writeLog(self.conwfile, log)
+
+	def logEnergy(self, log):
+		self.writeLog(self.energyfile, log)
 		
 	def writeLog(self, filename, data):
 		logfile = open(filename, 'a')
@@ -53,8 +61,10 @@ class logserver:
 		potpath = os.path.normpath(os.path.join(logpath, 'Potential'))
 		misspath = os.path.normpath(os.path.join(logpath, 'MissEnergy'))
 		reppath = os.path.normpath(os.path.join(logpath, 'ReplenishEnergy'))
+		regpath = os.path.normpath(os.path.join(logpath, 'Region'))
+		energypath = os.path.normpath(os.path.join(logpath, 'Energy'))
 
-		for dir in [conpath, conwpath, firepath, inputpath, potpath, misspath, reppath]:
+		for dir in [conpath, conwpath, firepath, inputpath, potpath, misspath, reppath, regpath, energypath]:
 			if not os.path.exists(dir):
 				os.makedirs(dir)
 	
@@ -65,8 +75,10 @@ class logserver:
 		self.potfile = os.path.join(potpath, timestampstr)
 		self.missfile = os.path.join(misspath, timestampstr)
 		self.repfile = os.path.join(reppath, timestampstr)
+		self.regionfile = os.path.join(regpath, timestampstr)
 		self.confile  = os.path.join(conpath, timestampstr)
 		self.conwfile = os.path.join(conwpath, timestampstr)
+		self.energyfile = os.path.join(energypath, timestampstr)
 
 		lfile = open(self.firefile, 'w')
 		lfile.close()
@@ -78,9 +90,13 @@ class logserver:
 		lfile.close()
 		lfile = open(self.repfile, 'w')
 		lfile.close()
+		lfile = open(self.regionfile, 'w')
+		lfile.close()
 		lfile = open(self.confile, 'w')
 		lfile.close()
 		lfile = open(self.conwfile, 'w')
+		lfile.close()
+		lfile = open(self.energyfile, 'w')
 		lfile.close()
 	
 	def main(self):
@@ -95,7 +111,6 @@ def index():
 @app.route("/purplebrain.html")
 def brain():
 	return render_template('./purplebrain.html')
-
 
 def logRequest(logger):
 	log = request.get_json()
@@ -121,6 +136,10 @@ def logMiss():
 @app.route('/replenish', methods=['POST'])
 def logRep():
 	return logRequest(logserv.logReplenish)
+
+@app.route('/region', methods=['POST'])
+def logReg():
+	return logRequest(logserv.logRegion)
 	
 @app.route('/connection', methods=['POST'])
 def logConnections():
@@ -129,6 +148,10 @@ def logConnections():
 @app.route('/conweights', methods=['POST'])
 def logWeights():
 	return logRequest(logserv.logConW)
+
+@app.route('/energy', methods=['POST'])
+def logEnergy():
+	return logRequest(logserv.logEnergy)
 
 @app.route('/createLogs', methods=['POST'])	
 def createLogFiles():		
