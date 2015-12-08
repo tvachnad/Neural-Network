@@ -33,7 +33,7 @@
 		this.idx = -1;
 
 		//neuron fires when this number passes the firing threshold
-		this.acc = 0.2;
+		this.acc = 0.5;
 
 		this.region = -1; // which region the neuron belongs to
 		// 1 - 188, assigned during initialization
@@ -809,8 +809,7 @@
 	NeuralNetwork.prototype.updateRegeneration = function(currentTime) {
 		var timeSinceLastUpdate = currentTime - this.lastRegenUpdate;
 		if(timeSinceLastUpdate >= astrocyte_settings.frequency){
-			//astrocyte_settings.replenishEnergy += this.regenSign*astrocyte_settings.amplitude;
-			astrocyte_settings.replenishEnergy = 0.08;
+			astrocyte_settings.replenishEnergy += this.regenSign*astrocyte_settings.amplitude;
 			this.lastRegenUpdate = currentTime;
 			if(astrocyte_settings.replenishEnergy > astrocyte_settings.maxThreshold){
 				astrocyte_settings.replenishEnergy = astrocyte_settings.maxThreshold; 
@@ -893,7 +892,7 @@
 				n.type = EXCITOR;
 				//n.maxConnectionPerNeuron = network_settings.NeuronConnectionExcitor;
 				n.region = i+1;
-				
+
 				n.astrocyte = new Astrocyte();
 				// half of all the astrocytes should be live
 				//console.log("adfasdvknvjanlkdsjnfjvhslkvdbchjksbdn");
@@ -1243,7 +1242,7 @@
 	// ---- renderer
 	renderer = new THREE.WebGLRenderer({
 		antialias: true,
-		alpha: false
+		alpha: true
 	});
 	renderer.setSize(window.innerWidth, window.innerHeight);
 	container.appendChild(renderer.domElement);
@@ -1294,65 +1293,61 @@
 	// ---------- GUI ----------
 
 	var gui = new dat.GUI();
-	gui.width = 400;
+	gui.width = 425;
 
-	var gui_info = gui.addFolder('Info');
+	var gui_info = gui.addFolder('Network information');
 	gui_info.add(neuralNet, 'numNeurons').name('Neurons');
-	gui_info.add(neuralNet, 'numNeurons').name('Astrocytes');
-	gui_info.add(neuralNet, 'numAxons').name('Axons');
-	gui_info.add(neuralNet, 'numSignals', 0, neuralNet.numAxons).name('Signals');
-	gui_info.add(neuralNet, 'numActiveAstrocytes', 0, neuralNet.numActiveAstrocytes).name('Active Astrocytes');
-	gui_info.add(astrocyte_settings, 'minEnergy').name('Pool Min energy');
-	gui_info.add(astrocyte_settings, 'maxEnergy').name('Pool Max energy');
-	gui_info.add(astrocyte_settings, 'fireEnergy').name('Pool Firing Thresh');
+	gui_info.add(neuralNet, 'numNeurons').name('Energy Pools');
+	gui_info.add(neuralNet, 'numAxons').name('Axons (connections)');
+	gui_info.add(neuralNet, 'numSignals', 0, neuralNet.numAxons).name('Current action potentials');
+	gui_info.add(neuralNet, 'numActiveAstrocytes', 0, neuralNet.numActiveAstrocytes).name('Viable energy pools');
+	gui_info.add(astrocyte_settings, 'minEnergy').name('Min in energy pool');
+	gui_info.add(astrocyte_settings, 'maxEnergy').name('Max in energy pool');
+	gui_info.add(astrocyte_settings, 'fireEnergy').name('Min energy for firing');
 	gui_info.autoListen = false;
 
-	var gui_settings = gui.addFolder('Network Settings');
-	gui_settings.add(neuralNet, 'currentMaxSignals', 0, neuralNet.limitSignals).name('Max Signals');
-	gui_settings.add(network_settings, 'AxonDistance', 0, 20).name('Max Axon Distance Excitor');
+	var gui_settings = gui.addFolder('Network settings');
+	gui_settings.add(neuralNet, 'currentMaxSignals', 0, neuralNet.limitSignals).name('Max signals');
+	gui_settings.add(network_settings, 'AxonDistance', 0, 20).name('Max axon distance');
 	//gui_settings.add(network_settings, 'AxonDistanceInhibitor', 0, 20).name('Max Axon Distance Inhibitor');
-	gui_settings.add(network_settings, 'NeuronConnection', 0, 20).name('Max Neuron Connections');
+	gui_settings.add(network_settings, 'NeuronConnection', 0, 20).name('Max neuron connections');
 	//gui_settings.add(network_settings, 'NeuronConnectionInhibitor', 0, 20).name('Max Inhibitor Neuron Connections');
-	gui_settings.add(neuralNet, 'signalMinSpeed', 0.01, 0.1, 0.01).name('Signal Min Speed');
-	gui_settings.add(neuralNet, 'signalMaxSpeed', 0.01, 0.1, 0.01).name('Signal Max Speed');
+	gui_settings.add(neuralNet, 'signalMinSpeed', 0.01, 0.1, 0.01).name('Signal min speed');
+	gui_settings.add(neuralNet, 'signalMaxSpeed', 0.01, 0.1, 0.01).name('Signal max speed');
 	gui_settings.add(network_settings, 'reload'); 
-	gui_settings.open();
 
-	var gui_settings = gui.addFolder('Astrocyte Settings');
+	var gui_settings = gui.addFolder('Energy pool settings');
 	//gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Threshold for energy regeneration');
-	gui_settings.add(astrocyte_settings, 'replenishEnergy', 0, 1).name('Replenish energy amount').listen();
-	gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 500).name('Energy regeneration time in ms');
-	gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Minimum Threshold');
-	gui_settings.add(astrocyte_settings, 'maxThreshold', 0, 1).name('Maximum Threshold');
-	gui_settings.add(astrocyte_settings, 'frequency', 0, 1000).name('frequency for change in energy in ms');
-	gui_settings.add(astrocyte_settings, 'amplitude', 0, 1).name('Amplitude');
-	gui_settings.open();
+	gui_settings.add(astrocyte_settings, 'replenishEnergy', 0, 1).name('Replenish rate').listen();
+	gui_settings.add(astrocyte_settings, 'regenerationTime', 0, 500).name('Regen. time (ms)');
+	gui_settings.add(astrocyte_settings, 'minThreshold', 0, 1).name('Minimum threshold');
+	gui_settings.add(astrocyte_settings, 'maxThreshold', 0, 1).name('Maximum threshold');
+	gui_settings.add(astrocyte_settings, 'frequency', 0, 1000).name('Freq. of rate change');
+	gui_settings.add(astrocyte_settings, 'amplitude', 0, 1).name('Amp. of rate change');
 
 	// controller.onFinishChange(function(value){
 	// 	//clearInterval(functionRegeneration);
 	// 	window.neuralNet.regenerationFunction();
 	// });
 
-	var gui_settings = gui.addFolder('Activation Function Settings');
-	gui_settings.add(network_settings, 'firing_threshold', 0, 1).name("Firing Threshold");
-	gui_settings.add(network_settings, 'signal_weight', 0, 1).name("Signal Weight");
-	gui_settings.add(network_settings, 'decayTime', 0, 100000).name("Decay Time in ms");
+	var gui_settings = gui.addFolder('Activation function settings');
+	gui_settings.add(network_settings, 'firing_threshold', 0, 1).name("Membrane pot. thresh.");
+	gui_settings.add(network_settings, 'signal_weight', 0, 1).name("Signal weight");
+	gui_settings.add(network_settings, 'decayTime', 0, 100000).name("Decay time in ms");
 
-	var gui_settings = gui.addFolder('Visual Settings');
-	gui_settings.add(neuralNet.particlePool, 'pSize', 0.2, 2).name('Signal Size');
-	gui_settings.add(neuralNet, 'neuronSize', 0, 2).name('Neuron Size');
-	gui_settings.add(neuralNet, 'neuronOpacity', 0, 1.0).name('Neuron Opacity');
-	gui_settings.add(neuralNet, 'axonOpacityMultiplier', 0.0, 5.0).name('Axon Opacity Mult');
-	gui_settings.addColor(neuralNet.particlePool, 'pColor').name('Signal Color');
-	gui_settings.addColor(neuralNet, 'excitorColor').name('Excitor Color');
-	gui_settings.addColor(neuralNet, 'inhibitorColor').name('Inhibitor Color');
-	gui_settings.addColor(neuralNet, 'excitorAxonColor').name('Excitor Axon Color');
-	gui_settings.addColor(neuralNet, 'inhibitorAxonColor').name('Inhibitor Axon Color');
+	var gui_settings = gui.addFolder('Visual settings');
+	gui_settings.add(neuralNet.particlePool, 'pSize', 0.2, 2).name('Signal size');
+	gui_settings.add(neuralNet, 'neuronSize', 0, 2).name('Neuron size');
+	gui_settings.add(neuralNet, 'neuronOpacity', 0, 1.0).name('Neuron opacity');
+	gui_settings.add(neuralNet, 'axonOpacityMultiplier', 0.0, 5.0).name('Axon opacity mult');
+	gui_settings.addColor(neuralNet.particlePool, 'pColor').name('Signal color');
+	gui_settings.addColor(neuralNet, 'excitorColor').name('Excitatory neuron color');
+	gui_settings.addColor(neuralNet, 'inhibitorColor').name('Inhibitory neuron color');
+	gui_settings.addColor(neuralNet, 'axonColor').name('Axon color');
 	gui_settings.addColor(scene_settings, 'bgColor').name('Background');
 
-	gui_info.open();
+	//gui_info.open();
 	// a_settings.open();
-	gui_settings.open();
 
 	function updateNeuralNetworkSettings() {
 		neuralNet.updateSettings();
@@ -1375,7 +1370,7 @@
 
 
 		requestAnimationFrame(run);
-		renderer.setClearColor(scene_settings.bgColor, 1);
+		renderer.setClearColor(scene_settings.bgColor, 1); // change to 0 for white background (looks bad)
 
 		if (!scene_settings.pause) {
 			if (clock.time() >= 100000){
