@@ -1343,7 +1343,7 @@
 	gui_settings.addColor(neuralNet.particlePool, 'pColor').name('Signal color');
 	gui_settings.addColor(neuralNet, 'excitorColor').name('Excitatory neuron color');
 	gui_settings.addColor(neuralNet, 'inhibitorColor').name('Inhibitory neuron color');
-	gui_settings.addColor(neuralNet, 'axonColor').name('Axon color');
+	// gui_settings.addColor(neuralNet, 'axonColor').name('Axon color');
 	gui_settings.addColor(scene_settings, 'bgColor').name('Background');
 
 	//gui_info.open();
