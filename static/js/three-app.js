@@ -394,7 +394,8 @@
 
 		this.offScreenPos = new THREE.Vector3(9999, 9999, 9999); // #CM0A r68 PointCloud default frustumCull = true(extended from Object3D), so need to set to 'false' for this to work with oppScreenPos, else particles will dissappear
 
-		this.pColor = 0xfff6cd;
+		// this.pColor = 0xfff6cd;
+		this.pColor = 0xff4400;
 		this.pSize = 0.6;
 
 		var particle;
